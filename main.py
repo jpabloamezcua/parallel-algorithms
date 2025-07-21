@@ -22,20 +22,41 @@ from src.paper_plots.problem_overhead_vs_proc import *
 from src.paper_plots.problem_speedup_vs_proc import *
 from src.paper_plots.aggregate_switch_to_work_ineff import *
 
-from data.converter import *
+from converter import *
 from data.processor_data_acquisition import *
+from src.processed_data import full_data, rel_speedup_seq_data, aux_data, top_processor_data, pc_processor_data, VERSION
+
+
 
 # from src.processed_data import *
 
 print("starting main")
+
+def patch_data_with_parallel_field(data_dict):
+    """
+    Adds missing 'parallel' field to all entries in the data dictionary.
+    Uses 'par' field to determine if algorithm is parallel (parallel=True if par > 0).
+    """
+    for name, entry in data_dict.items():
+        if "parallel" not in entry:
+            if "par" in entry and entry["par"] > 0:
+                entry["parallel"] = 1
+            else:
+                entry["parallel"] = 0
+
 
 ################################################################################
 ################## DATA ########################################################
 ################################################################################
 
 ########## Refactor data
-import src.data_processing
-print(src.data_processing.raw_database.populate_raw_database_parallel())
+#import src.data_processing
+#print(src.data_processing.raw_database.populate_raw_database_parallel())
+# IDK WHAT'S GOING ON HERE
+#import src.processed_data
+#print(src.processed_data.raw_database.populate_raw_database_parallel())
+
+
 
 ########## End of refactor data
 
@@ -45,7 +66,7 @@ print(src.data_processing.raw_database.populate_raw_database_parallel())
 # print(find_best_top_every_year("cpu_short"))
 # print(find_proc_increase_commercial())
 
-model_sheet_name = "data/par_models_JAN26"
+model_sheet_name = "data/par_models_FEB18"
 old_sheet_name = "past_data/parallel_sheet_for_models_JAN_8"
 mod_map = {
     100: 130,
@@ -89,172 +110,39 @@ def make_model_dataset(par_algos):
         year = par_algos[name]["year"]
         model = par_algos[name]["model"]
         alg_id = par_algos[name]["id"]
-        jsonArray.append({"year":year,"model":model,"id":alg_id})
+        parallel = True
+        jsonArray.append({"year":year,"model":model,"id":alg_id,"parallel":parallel})
 
-    newJsonFilePath = r'./data/par_models_JAN26.json'
-    with open(newJsonFilePath, 'w', encoding='utf-8') as jsonf: 
+    newJsonFilePath = r'./data/par_models_JUL21.json'
+    with open(newJsonFilePath, 'w', encoding='utf-8') as jsonf:
         jsonString = json.dumps(jsonArray, indent=4)
         jsonf.write(jsonString)
     pass
 
-# make_model_dataset(simulated_par_data)
+make_model_dataset(simulated_par_data)
 
-# for elem in simulated_par_data:
-#     # print(simulated_par_data[elem]['id'])
-#     # print(type(simulated_par_data[elem]['id']))
-#     # break
-#     if simulated_par_data[elem]['id'] == '533':
-#         print(simulated_par_data[elem]['id'])
+# Patch all data dictionaries to ensure they have the parallel field
+patch_data_with_parallel_field(full_data)
+patch_data_with_parallel_field(simulated_par_data)
+patch_data_with_parallel_field(rel_speedup_seq_data)
+all_problem_names = set(info.get("problem") for info in full_data.values() if info.get("problem"))
+for elem in simulated_par_data:
+    # print(simulated_par_data[elem]['id'])
+    # print(type(simulated_par_data[elem]['id']))
+    # break
+    if simulated_par_data[elem]['id'] == '533':
+        print(simulated_par_data[elem]['id'])
 
-# create_aux_data(simulated_par_data,full_seq_data)
-# create_aux_data(full_data,rel_speedup_seq_data)
-
-################################################################################
-##### FINAL GRAPH CALLS ########################################################
-################################################################################
-
-pset = get_problems(simulated_par_data)
-# print(len(pset))
-# print(len(simulated_par_data))
-# print(pset)
-
-# fset = get_families(simulated_par_data)
-# print(len(fset))
-# print(fset)
-
-# # 4.1
-# short_decs = [{"max":CUR_YEAR,"label":"all the time"}]
-# average_improvement_over_decade_graph(simulated_par_data,full_seq_data,short_decs)
-# average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES,var_weights="thesis_weight")
-
-# # 4.2
-# available_processors(top_processor_data,pc_processor_data)
-
-# # 4.3
-# print(speedup_for_available_processors(simulated_par_data,full_seq_data,'APSP',
-#                                        top_processor_data,pc_processor_data,n=10**6,seq=True))
-
-# # 4.4
-# print(speedup_for_available_processors(simulated_par_data,full_seq_data,'2-Player',
-#                                        top_processor_data,pc_processor_data,n=10**6,seq=True))
-# problem_relative_speedup_graph(simulated_par_data,full_seq_data,['1D Maximum Subarray'],n=10**6) # debugging
-# aggregated_relative_speedup(simulated_par_data,full_seq_data,n=10**6)
-# new_aggregated_relative_speedup_graph(simulated_par_data,full_seq_data,n=10**6) 
-
-# # 5.1
-# problem_work_vs_span_pareto_frontier(original_par_data,full_seq_data,'LCS')
-
-# # 5.2 - figure out if sequential algos should be counted
-# pareto_frontier_graph(simulated_par_data,full_seq_data,DECADES)
-# print(pareto_frontier_current_fractions(simulated_par_data,full_seq_data,DECADES))
-# print(len(get_problems(simulated_par_data)))
-
-# # 5.3
-# span_comparison_best_vs_work_efficient(full_problem_data)
-
-# # 5.4
-# span_overhead_matrix(full_problem_data)
-
-# # 5.5
-# work_span_improvement_heatmap(simulated_par_data)
-
-# # 6.1
-bs_mst_algo_name = "14475Johnson, Metaxas (1992)"
-we_mst_algo_name = "14457Deo and Yoo (1981)" #"14.1-10-Chin et al. (1982)"
-# strong_scaling(simulated_par_data,bs_mst_algo_name,pr_sizes=[10**3,10**6,10**9])
-# strong_scaling_comparison(simulated_par_data,bs_mst_algo_name,we_mst_algo_name)
-# weak_scaling_comparison_graph(simulated_par_data,bs_mst_algo_name,we_mst_algo_name)
-# varying_scaling_comparison_graph(simulated_par_data,bs_mst_algo_name,we_mst_algo_name)
-
-# # 6.2
-# new_parallelism_graph(full_problem_data)
-
-# # 7.1 - something seems sus... looks very different from the work plot
-# print(get_impr_data(simulated_par_data,n=10**3,p=8))
-# performance_vs_span_improvement(simulated_par_data,lower=True)#,p_values=[1,10],n_values=[10**3,10**9])
-
-# # 7.2
-# compound_growth_rate_distribution_graph(simulated_par_data,full_seq_data,g_buckets,n=10**3,p=2**3)
-# compound_growth_rate_histo_grid(simulated_par_data,full_seq_data,g_buckets,
-#                                     n_values=[10**3,10**6,10**9],p_values=[8,10**3,10**6])
-
-# # 7.3
-# share_of_progress_graph(simulated_par_data,full_seq_data,possible_n=[10**3,10**6,10**9])
-# print(share_of_progress_problem_data(simulated_par_data,full_seq_data,'OBST',n=10**6))
-
-
-
-# # NEW 5.5 and 7.1 (only Pareto algorithms)
-# pareto_algorithms = pareto_frontier_pushing(simulated_par_data,full_seq_data)
-# work_span_improvement_heatmap(simulated_par_data,seq_data={},pareto=pareto_algorithms)
-# performance_vs_span_improvement(simulated_par_data,pareto=pareto_algorithms,lower=True)
-
-# print(pareto_algorithms)
-# work_span_improvement_heatmap(pareto_algorithms,seq_data={},all_data=simulated_par_data)
-# for algo in pareto_algorithms:
-#     assert algo in simulated_par_data
-#     assert pareto_algorithms[algo] == simulated_par_data[algo]
-
-
-
-################################################################################
-##### PAPER GRAPHS #############################################################
-################################################################################    
-
-histo_buckets = [{"max": 0.03, "label": "0-3%"},
-            {"max": 0.1, "label": "3-10%"},
-            {"max": 0.3, "label": "10-30%"},
-            {"max": 1, "label": "30-100%"},
-            {"max": 3, "label": "100-300%"},
-            {"max": 10, "label": "300-1000%"},
-            {"max": math.inf, "label": ">1000%"},]
-# yearly_impr_rate_histo_grid(simulated_par_data, histo_buckets,n_values=[10**3,10**6,10**9],
-#                                 p_values=[8,10**3,10**6], measure="rt")
-
-# span_vs_work_multiple_probs(simulated_par_data,full_seq_data,
-#                 problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
-# span_vs_work_multiple_probs_pareto_frontier(simulated_par_data,full_seq_data,
-#                 problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
-
-# numerical_overhead_vs_span(simulated_par_data,full_seq_data,
-#             problems=['Topological Sorting','LCS','Bipartite Graph MCM'],n=10**6)
-
-# problem_speedup_vs_proc(simulated_par_data,full_seq_data,"Bipartite Graph MCM",n_values=[10**3,10**6,10**9],max_p=10**7)
-
-# problem_overhead_vs_proc(simulated_par_data,full_seq_data,"Bipartite Graph MCM",n_values=[10**3,10**6,10**9],
-#                              allowed_models=set(model_dict.keys()))
-
-small_pset = ['DFA Minimization','Stable Marriage Problem','Exact Laplacian Solver']
-
-# print(problems_switch_to_work_inefficient(simulated_par_data,full_seq_data,small_pset,n=10**3,max_p=10**20))
-
-# problems_switch_to_work_inefficient_graph(simulated_par_data,full_seq_data,pset,
-#                             n_values = [10**3,10**6,10**9],max_p=10**10)
-# problems_work_efficiency_by_processors_graph(simulated_par_data,full_seq_data,pset,
-#                             n = 10**6, max_p=10**9,allowed_models=set(model_dict.keys()))
-
-
-# print(work_overhead_histogram(simulated_par_data,full_seq_data,small_pset,p=10**3,n=10**3,
-#                             upper_bounds=[0,10,50,100,math.inf],
-#                             max_p=10**20,allowed_models=set(model_dict.keys()))) # TODO: numbers don't add up
-
-# work_overhead_histogram_graph(simulated_par_data,full_seq_data,pset,p=10**3,n_values=[10**3,10**6,10**9],
-#                             upper_bounds=[0,10,50,100,math.inf],
-#                             max_p=10**9,allowed_models=set(model_dict.keys()))
-
-# work_overhead_histogram_graph_multiple_p(simulated_par_data,full_seq_data,pset,p_values=[8,10**3,10**6],n_values=[10**3,10**6,10**9],
-#                             upper_bounds=[0,10,100,1000,10000,math.inf],
-#                             max_p=10**9,allowed_models=set(model_dict.keys()))
-
-
+create_aux_data(simulated_par_data,full_seq_data)
+create_aux_data(full_data,rel_speedup_seq_data)
 
 
 # helpers
 
-# print(best_algos_by_speedup(simulated_par_data,full_seq_data,"LCS",n=10**6,
-#                           allowed_models=set(model_dict.keys())))
+print(best_algos_by_speedup(simulated_par_data,full_seq_data,"LCS",n=10**6,
+                          allowed_models=set(model_dict.keys())))
 
-# print(get_pareto_points(simulated_par_data,full_seq_data,'LCS',allowed_models=PRAM_LIKE_MODELS))
+print(get_pareto_points(simulated_par_data,full_seq_data,'LCS',allowed_models=PRAM_LIKE_MODELS))
 
 
 
@@ -327,102 +215,42 @@ def overflow_debugging():
 
 
 
-################################################################################
-################################################################################
-################################################################################
-################################################################################
-################################################################################
-##### OLD CALLS ################################################################
-################################################################################
-
-# absolute speedup vs processors for 3 values of n for 1 algorithm
-name = "14.1-11-Johnson, Metaxas (1992)"
-# absolute_speedup(full_data,name)
-# incremental_benefit_scaling(full_data,name)
-# print(performance_vs_span_improvement(full_data))
-
-# rel_speedup_sus()
-# print(problem_relative_speedup_data(full_data,rel_speedup_seq_data,14.1,n=10**6,p=2**30))
-# problem_relative_speedup_graph(full_data,rel_speedup_seq_data,[17],n=10**6)
-# available_processors(top_processor_data,pc_processor_data)
-# print(speedup_for_available_processors(full_data,rel_speedup_seq_data,17,
-#                                        top_processor_data,pc_processor_data,n=10**6,seq=True))
-# span_overhead_matrix(aux_data)
-
-# share_of_progress_graph(full_data,rel_speedup_seq_data,possible_n=[10**3,10**6,10**9])
-# print(share_of_progress_problem_data(full_data,rel_speedup_seq_data,problem=13.1,n=10**6))
-
-# span_comparison_best_vs_work_efficient(aux_data)
-# new_parallelism_graph(aux_data)
-# yearly_impr_rate_histo_rt(full_data, g_buckets, n=10**3,p=512)
-# decade_progress(full_data,rel_speedup_seq_data,g_decades,n=10**3,p=64)
-# pareto_frontier_graph(full_data,rel_speedup_seq_data,g_decades)
-# aggregated_relative_speedup(full_data,rel_speedup_seq_data,n=10**6)
-# work_span_improvement_heatmap(full_data)
-# print(pareto_frontier_current_fractions(full_data,rel_speedup_seq_data,g_decades)
-
-# compound_growth_rate_distribution_graph(full_data,rel_speedup_seq_data, g_buckets,n=10**9,p=2**3)
-
-# print(average_improvement_over_decade_data(full_data,rel_speedup_seq_data,g_decades))
-# average_improvement_over_decade_graph(full_data,rel_speedup_seq_data,g_decades)
-
-# problem_work_vs_span_pareto_frontier(full_data,rel_speedup_seq_data,14.1)
-
-# names:
-bs_mst_algo_name = "14.1-11-Johnson, Metaxas (1992)"
-we_mst_algo_name = "14.1-13-Deo and Yoo (1981)" #"14.1-10-Chin et al. (1982)"
-# strong_scaling_comparison(full_data,bs_mst_algo_name,we_mst_algo_name)
-# weak_scaling_comparison_graph(full_data,bs_mst_algo_name,we_mst_algo_name)
-# varying_scaling_comparison_graph(full_data,bs_mst_algo_name,we_mst_algo_name)
-
-
-# new_aggregated_relative_speedup_graph(full_data,rel_speedup_seq_data,n=10**6)
-# debug(full_data,rel_speedup_seq_data,n=10**6)
-# print(new_data_for_speedup_for_available_processors(full_data,rel_speedup_seq_data,problem=13.1))
-# print(problem_relative_speedup_data(full_data,rel_speedup_seq_data,problem=13.1,n=10**6,p=1))
-# print(problem_relative_speedup_data(full_data,rel_speedup_seq_data,problem=13.1,n=10**6,p=128))
-# print(problem_relative_speedup_data(full_data,rel_speedup_seq_data,problem=13.1,n=10**6,p=10**6))
-
-# print(share_of_progress_problem_data(full_data,rel_speedup_seq_data,problem=13.1,n=10**6))
-# share_of_progress_graph(full_data,rel_speedup_seq_data,possible_n=[10**3,10**6,10**9])
-
-
-# {'k Nearest Neighbors Search', 'undirected SSSP', 'Polygon Clipping with Arbitrary Clipping Polygon', 
-# 'Non-comparison Sorting', 'Bipartite Graph MCM', 'kth Order Statistic', '2-dimensional space', 
-# 'Single String Search', '2-Dimensional Delaunay Triangulation', 'Max Flow', 'DFA Minimization', 
-# '2-D Polynomial Interpolation', 'General Linear Programming', 'APSP', 'General Graph MCM', 
-# 'General Linear System', 'CC', 'Matrix Chain Scheduling Problem', 'Matrix Multiplication', 
-# 'Greatest Common Divisor', 'General Maximum-Weight Matching', 'SCCs', 'Intersection detection', 
-# 'Boolean Matrix Multiplication', 'Constructing Suffix Trees', 'directed SSSP', 'Variance Calculations', 
-# 'Line Drawing', '2-Player', '2-dimensional', 'undirected nonneg SSSP', 'Approximate MCOP', 
-# 'k-dimensional space', 'Reporting intersection points', '2D Maximum Subarray', 'directed MST; MST', 
-# 'CC; SCCs', 'Point-in-Polygon', 'Multiplication', '1D Maximum Subarray', 'MST', 'Matrix LU Decomposition', 
-# 'Topological Sorting', 'Comparison Sorting', '3-dimensional', 'General Permutations', 'LCS', 'OBST', 
-# 'Constructing Eulerian Trails in a Graph', 'Lossless Compression', 'General Root Computation', 
-# 'Constuct Voronoi Diagram', 'Edit Distance, constant-size alphabet', 
+# {'k Nearest Neighbors Search', 'undirected SSSP', 'Polygon Clipping with Arbitrary Clipping Polygon',
+# 'Non-comparison Sorting', 'Bipartite Graph MCM', 'kth Order Statistic', '2-dimensional space',
+# 'Single String Search', '2-Dimensional Delaunay Triangulation', 'Max Flow', 'DFA Minimization',
+# '2-D Polynomial Interpolation', 'General Linear Programming', 'APSP', 'General Graph MCM',
+# 'General Linear System', 'CC', 'Matrix Chain Scheduling Problem', 'Matrix Multiplication',
+# 'Greatest Common Divisor', 'General Maximum-Weight Matching', 'SCCs', 'Intersection detection',
+# 'Boolean Matrix Multiplication', 'Constructing Suffix Trees', 'directed SSSP', 'Variance Calculations',
+# 'Line Drawing', '2-Player', '2-dimensional', 'undirected nonneg SSSP', 'Approximate MCOP',
+# 'k-dimensional space', 'Reporting intersection points', '2D Maximum Subarray', 'directed MST; MST',
+# 'CC; SCCs', 'Point-in-Polygon', 'Multiplication', '1D Maximum Subarray', 'MST', 'Matrix LU Decomposition',
+# 'Topological Sorting', 'Comparison Sorting', '3-dimensional', 'General Permutations', 'LCS', 'OBST',
+# 'Constructing Eulerian Trails in a Graph', 'Lossless Compression', 'General Root Computation',
+# 'Constuct Voronoi Diagram', 'Edit Distance, constant-size alphabet',
 # 'Transitive Reduction Problem of Directed Graphs', 'directed nonneg SSSP', 'Discrete Fourier Transform'}
 
 
-# {'Matrix Multiplication', 'k Nearest Neighbors Search', 'directed nonneg SSSP', 
-# 'directed MST', 'Topological Sorting', 'MST', 'Enumerating Maximal Cliques', 'Multiplication', 
-# 'Boolean Matrix Multiplication', 'APSP', 'Matrix LU Decomposition', 'Bipartite Graph MCM', 
-# 'General Permutations', 'Determinant of Matrices with Integer Entries', '2D Maximum Subarray', 
-# 'General Linear System', 'Intersection detection', 'General Root Computation', 
-# 'Exact Laplacian Solver', 'Maximum Cut', 'undirected SSSP', 'Comparison Sorting', 
-# 'Constructing Eulerian Trails in a Graph', 'Transitive Reduction Problem of Directed Graphs', 
-# 'All Nearest Neighbors', 'Bipartite Maximum-Weight Matching', '2-dimensional Convex Hull', 
-# 'Constructing Suffix Trees', 'Point-in-Polygon', 'Non-comparison Sorting', 
-# 'General Maximum-Weight Matching', 'Polygon Clipping with Arbitrary Clipping Polygon', 
-# 'Single String Search', 'Variance Calculations', 'Subset Sum', '3-dimensional Convex Hull', 
-# '2-Dimensional Delaunay Triangulation', '2-D Polynomial Interpolation', 'CFG Parsing', 
-# '2-Dimensional Poisson Problem', 'k-dimensional space Closest Pair Problem', 
-# '2-Player Nash Equilibria', 'Max Flow', 'Line Drawing', '1D Maximum Subarray', 'DFA Minimization', 
-# 'All Permutations', 'Transitive Closure', 'directed SSSP', 'Stable Marriage Problem', 
-# 'Edit Distance, constant-size alphabet', 'General Graph MCM', 'OBST', 'directed APSP', 
-# 'Lossless Compression', 'LCS', 'Reporting intersection points', 'Discrete Fourier Transform', 
-# 'CC', '3-Dimensional Poisson Problem', 'kth Order Statistic', 
-# 'Transitive Closure of a symmetric Boolean matrix', 'undirected nonneg SSSP', 
-# 'Constuct Voronoi Diagram', 'Matrix Chain Scheduling Problem', 'SCCs', 'MCOP', 
+# {'Matrix Multiplication', 'k Nearest Neighbors Search', 'directed nonneg SSSP',
+# 'directed MST', 'Topological Sorting', 'MST', 'Enumerating Maximal Cliques', 'Multiplication',
+# 'Boolean Matrix Multiplication', 'APSP', 'Matrix LU Decomposition', 'Bipartite Graph MCM',
+# 'General Permutations', 'Determinant of Matrices with Integer Entries', '2D Maximum Subarray',
+# 'General Linear System', 'Intersection detection', 'General Root Computation',
+# 'Exact Laplacian Solver', 'Maximum Cut', 'undirected SSSP', 'Comparison Sorting',
+# 'Constructing Eulerian Trails in a Graph', 'Transitive Reduction Problem of Directed Graphs',
+# 'All Nearest Neighbors', 'Bipartite Maximum-Weight Matching', '2-dimensional Convex Hull',
+# 'Constructing Suffix Trees', 'Point-in-Polygon', 'Non-comparison Sorting',
+# 'General Maximum-Weight Matching', 'Polygon Clipping with Arbitrary Clipping Polygon',
+# 'Single String Search', 'Variance Calculations', 'Subset Sum', '3-dimensional Convex Hull',
+# '2-Dimensional Delaunay Triangulation', '2-D Polynomial Interpolation', 'CFG Parsing',
+# '2-Dimensional Poisson Problem', 'k-dimensional space Closest Pair Problem',
+# '2-Player Nash Equilibria', 'Max Flow', 'Line Drawing', '1D Maximum Subarray', 'DFA Minimization',
+# 'All Permutations', 'Transitive Closure', 'directed SSSP', 'Stable Marriage Problem',
+# 'Edit Distance, constant-size alphabet', 'General Graph MCM', 'OBST', 'directed APSP',
+# 'Lossless Compression', 'LCS', 'Reporting intersection points', 'Discrete Fourier Transform',
+# 'CC', '3-Dimensional Poisson Problem', 'kth Order Statistic',
+# 'Transitive Closure of a symmetric Boolean matrix', 'undirected nonneg SSSP',
+# 'Constuct Voronoi Diagram', 'Matrix Chain Scheduling Problem', 'SCCs', 'MCOP',
 # '2-dimensional space Closest Pair Problem', 'Greatest Common Divisor', 'General Linear Programming'}
 
 
@@ -440,3 +268,150 @@ we_mst_algo_name = "14.1-13-Deo and Yoo (1981)" #"14.1-10-Chin et al. (1982)"
 # - 'Point-in-Polygon' - 1 step, 1 par point
 # - 'directed nonneg SSSP' - 1 step, 1 par algo
 
+#check data correctness
+with open("aux.json", "w") as json_file:
+    json.dump(full_problem_data, json_file, indent=4)
+
+
+
+print("running functions to make the actual graphs for the paper")
+##### overall TODO's #####
+#TODO: in the google sheet, check all relevant parallel algos have subproblem
+#TODO: in the google sheet, check all relevant serial algos have subproblem filled in (both sheet1 and new entries to sheet1)
+#TODO: sanity check work vs lower bounds for all problems for typos/mistakes
+#TODO: use newest data version
+## change version in header.py and converter.py and run converter.py
+## make new folder for plots according to version
+#TODO: go through each figure and decide if work should be T_1 or 2T_1-T_inf
+#TODO: go through each figure and check that p is never larger than maximum useful p*
+#TODO: look at get_runtime in helper_functions.py and check its calculating runtime correctly for both serial and parallel
+#TODO: also look at get_seq_runtime and maybe change that since some functions might be calling it directly instead of get_runtime
+
+# this sets the histogram bucket size - consider moving somewhere else
+pset = get_problems(simulated_par_data)
+#{"max": 0.001, "label": "0-0.1%"},
+histo_buckets = [
+            {"max": 0.001, "label": "~0%"},
+            {"max": 0.03, "label": "0.1-3%"},
+            {"max": 0.1, "label": "3-10%"},
+            {"max": 0.3, "label": "10-30%"},
+            {"max": 1, "label": "30-100%"},
+            # {"max": 3, "label": "100-300%"},
+            # {"max": 10, "label": "300-1000%"},
+            # {"max": math.inf, "label": ">1000%"},
+            ]
+
+
+######### FIGURE 1 #########
+print("figure 1.1: Algorithm Improvements over Time")
+#TODO: test if what i have is correct (check which problems have lots of variations, do they scale down intuitively)
+average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES)
+average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES,var_weights="thesis_weight")
+
+print("figure ??: Number of Parallel Processors Over Time")
+#TODO: change colors?
+available_processors(top_processor_data,pc_processor_data)
+
+print("figure ??: Parallel Performance for All Pairs Shortest Paths Problem using processors available at the time")
+#TODO: fix the manual gap labels
+#TODO: maybe do different colors for this one and the one above
+#TODO: this is probably sparse apsp, so why does the problem say apsp? data error?
+#TODO: if later the autoformat changes then make sure the y range is bottom:1, top: whatever the top is
+#TODO: are these proc values correct (hardcoded?)
+speedup_for_available_processors(simulated_par_data,full_seq_data,'APSP', top_processor_data,pc_processor_data,n=10**6,seq=True)
+
+
+######### FIGURE 2 #########
+print("sankey style figure")
+#TODO: try other colors
+#TODO: fix the label & title overlap
+#TODO: if the rightmost bar tick marks dont overlap because of thin categories, remove the buffer so every second one is not moved out
+#TODO: change titles
+#personal
+# sankey_style_graph(full_data,simulated_par_data, n=10**6, p=8)
+# #big
+# sankey_style_graph(full_data,simulated_par_data, n=10**9, p=10**3)
+
+
+######### FIGURE 3 #########
+print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Computational Length")
+#TODO: make sure that the hardcoded values in this graph are still ok
+#span_vs_work_multiple_probs_pareto_frontier(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
+print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Speedup Relative to Sequantial Time")
+numerical_overhead_vs_span(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'],n=10**6)
+
+print("figure 1.3: Best Span vs Best Work-efficient Algorithm Span for all Problems")
+#TODO: make labels look nicer
+#TODO: fix that one dotted line (change going to 0 to going to 100%)
+NEW_w_seq_span_comparison_best_vs_work_efficient(full_problem_data)
+
+
+######### FIGURE 4 #########
+print("figure 1.2: Algorithm Problem Average Yearly Improvement Rate (Sequantial and Parallel)")
+#this one (should be) just parallel improvement: measures from best seq
+#TODO: add labels to axis
+EVERYTHING_yearly_impr_rate_histo_grid(full_data, histo_buckets,n_values=[10**3,10**6,10**9],
+                               p_values=[8,10**3,10**6],measure="rt",variation="just_par_impr")
+
+
+######### FIGURE 5 #########
+print("figure 1.4: Fastest Parallel Algorithm and Work Overhead for Topological Sorting (in dense graphs)")
+#TODO: beutify algo names
+#TODO: place algo names/ "work overhead" somewhere nicer
+#TODO: in actual paper will need have something in caption that points to an explanation in the text about ignoring constants
+#TODO: why is there a vertical break?
+#TODO: change 1x-1x to just 1x
+#TODO: bigger fonts for everything
+#TODO: when things dont fit, move label outside of graph and add arrow
+#TODO: methodology addition about how we estimate work overhead and when we use each
+problem_speedup_vs_proc_three_curves(full_data, 13.1, n_values=[10**3, 10**6, 10**9], max_p=10**10)
+
+######### FIGURE 6 #########
+#TODO: keep tweaking colors
+print("figure 1.5: Work Overhead for the fastest algorithm")
+#TODO: change % to x
+NEW_work_overhead_histogram_graph_multiple_p(simulated_par_data,full_seq_data,pset,p_values=[8,10**3,10**6],n_values=[10**3,10**6,10**9],
+                            upper_bounds=[0,100,1000,10000,math.inf],
+                            max_p=10**9,allowed_models=set(model_dict.keys()))
+fastest_algo_work_eff(simulated_par_data, n=10**6, min_p=1, max_p=10**6)
+# Ensure full_data is properly loaded before plotting
+count_fastest_algo_by_category(full_data, simulated_par_data, n=10**6, min_p=1, max_p=10**6, step=1)
+
+
+
+
+# # probs=get_problems(full_data)
+# # probs_seq=get_problems(full_seq_data)
+# # probs_par=get_problems(simulated_par_data)
+# # with open("problems.csv", mode="w", newline="") as file:
+# #     writer = csv.writer(file)
+
+# #     # Writing header
+# #     writer.writerow(["Problem", "In sequential", "In Parallel"])
+
+# #     # Writing data rows
+# #     for item in sorted(probs):  # Sorting to maintain order
+# #         writer.writerow([
+# #             item,
+# #             1 if item in probs_seq else 0,
+# #             1 if item in probs_par else 0
+# #         ])
+
+# with open("best_algos.csv", mode="w", newline="") as file:
+#     writer = csv.writer(file)
+#     writer.writerow(["Problem", "Best span algo", "Best span", "Best sequential/best work algo","Best work", "If par WE exists: name", "Best WE span"])
+#     for prob in full_problem_data:
+#         writer.writerow([
+#             prob,
+#             full_problem_data[prob]["bs name"],
+#             full_problem_data[prob]["bs span"],
+#             full_problem_data[prob]["best seq name"],
+#             full_problem_data[prob]["best seq"],
+#             full_problem_data[prob]["we name"],
+#             full_problem_data[prob]["we span"]
+
+#         ])
+
+
+
+print("finished main")
