@@ -14,14 +14,14 @@ from src.thesis_plots.relative_speedup import *
 def yearly_impr_rate_histo_grid(data,raw_buckets,n_values=[10**3,10**6,10**9],
                                 p_values=[8,10**3,10**6],measure="rt"):
     fig, ax = plt.subplots(len(p_values),len(n_values),figsize=(7,7),dpi=200,layout='tight',sharey='all')
-    
+
     for i in range(len(p_values)):
         p = p_values[i]
         for j in range(len(n_values)):
             n = n_values[j]
             yearly_impr_rate_histo_helper(ax[i,j],data,raw_buckets,n,p,measure=measure)
             # ax[i,j].set_title("$n="+get_nice_n(n)+"$ \# processors = "+get_nice_n(p)+"$")
-            
+
     labels = [raw_buckets[i]["label"] for i in range(len(raw_buckets))]
     for j in range(len(n_values)):
         ax[len(p_values)-1,j].set_xticks(list(range(len(labels))),labels=labels, rotation=90)
@@ -36,23 +36,25 @@ def yearly_impr_rate_histo_grid(data,raw_buckets,n_values=[10**3,10**6,10**9],
             # ax[i,j].set_ylim(max_y_lim)
             ax[i,j].get_yaxis().set_visible(False)
 
-            
+
     ax[0,0].set_title("Problem size ($n$) =\n"+long_human_format(n_values[0]))
     ax[0,1].set_title("Problem size ($n$) =\n"+long_human_format(n_values[1]))
     ax[0,2].set_title("Problem size ($n$) =\n"+long_human_format(n_values[2]))
     ax[0,0].set_ylabel("# processors = \n"+long_human_format(p_values[0]))
     ax[1,0].set_ylabel("# processors = \n"+long_human_format(p_values[1]))
     ax[2,0].set_ylabel("# processors = \n"+long_human_format(p_values[2]))
-            
+
     fig.suptitle("Algorithm Problem Average Yearly Improvement Rate\n(Sequential and Parallel)")
-    
+    fig.supxlabel("Average Yearly Improvement Rate")
+    fig.supylabel("Number of Problems")
+
     plt.savefig(SAVE_LOC+'average_improvement_rate.png')
     # plt.show()
 
 # requires at least 2 buckets
 # used_measure can be either "rt" (running time) or "sp" (span)
 def yearly_impr_rate_histo(data, raw_buckets, n,p, measure="rt"):
-    
+
     fig, axis = plt.subplots(1,1)
     yearly_impr_rate_histo_helper(axis,data, raw_buckets, n,p, measure=measure)
 
@@ -147,5 +149,3 @@ many_g_buckets = [{"max": 0.1, "label": "0-10%"},
             {"max": math.inf, "label": ">1000%"},]
 
 # yearly_impr_rate_histo(full_data, g_buckets, 10**3)
-
-

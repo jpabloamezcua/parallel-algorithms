@@ -16,20 +16,31 @@ def span_vs_work_multiple_probs_pareto_frontier(par_data,seq_data,problems,allow
         pareto_points, best_seq = get_pareto_points(par_data,seq_data,prob,allowed_models=allowed_models)
 
         if prob == "Topological Sorting":
-            pareto_points = ['56718Chaudhuri (1992)',
+            pareto_points = [#'56Chaudhuri (1992)',
+                             #ID used to be 18 in the name but not anymore?? im changing the hardcoding and hoping for it to not mess up down the line
+                             '56718Chaudhuri (1992)', 
                             #   '56719Li, Pan, Shen (2003)',
-                                '56720Schudy (2008)']
+                                '56720Schudy (2008)'
+                                #'13Schudy (2008)'
+                                #'56Schudy (2008)'
+                                ]
         elif prob == "LCS":
-            pareto_points = ['4256Aggarwal & Park (1988)', 
+            pareto_points = [#'4256Aggarwal & Park (1988)', 
+                            '4Aggarwal & Park (1988)', 
                             #  '4257Alves, Cáceres, Song (2003)', 
-                             '4260Babu, Saxena (1997)', 
-                             '4261Babu, Saxena (1997)', 
+                             #'4260Babu, Saxena (1997)', 
+                             #'4261Babu, Saxena (1997)', 
+                              '4Babu, Saxena (1) (1997)',
+                             '4Babu, Saxena (2) (1997)'
                             #  '4267Hsu, Du (1984)', 
                             #  '4270Krusche, Tiskin (2010)', 
                             #  '4272Lin, Lu, Fang (1991)'
                              ]
         elif prob == "Bipartite Graph MCM":
-            pareto_points = ['28594Shiloach, Vishkin (1982)', '28595Kim, Chwa (1987)']
+            pareto_points = [#'28594Shiloach, Vishkin (1982)',
+                             '28Shiloach, Vishkin (1982)', 
+                             #'28595Kim, Chwa (1987)'
+                             '28Kim, Chwa (1987)']
 
 
         pareto_s_w_pairs = {(par_data[x]["span"],par_data[x]["work"]) for x in pareto_points}
@@ -60,7 +71,9 @@ def span_vs_work_multiple_probs_pareto_frontier(par_data,seq_data,problems,allow
             xpts.append(xpt)
             ypts.append(ypt)
             ax.scatter(xpt,ypt,c=color)
-        ax.step(xpts,ypts,c=color)
+        #ax.step(xpts,ypts,c=color)
+        #this should make it go horizontal first and then step down
+        ax.step(xpts, ypts, c=color, where='post')
 
     # legend
     handles = []
@@ -68,7 +81,9 @@ def span_vs_work_multiple_probs_pareto_frontier(par_data,seq_data,problems,allow
         new_patch = mpatches.Patch(color=str(COLORS[i]), label=problems[i])
         handles.append(new_patch)
     # ax.legend(handles=handles)
-    text_pos = [(3.6,0.8),(3.7,4.8),(4.2,3)]
+    #text_pos = [(3.6,0.8),(3.7,4.8),(4.2,3)]
+    #manually tweaking where the labels go
+    text_pos = [(2.4, 0.5), (4.2, 4.8), (2.8, 2)]
     for i in range(len(problems)):
         ax.text(text_pos[i][0],text_pos[i][1],problem_dict[problems[i]],color=COLORS[i],
                 fontsize=10,verticalalignment='center')
