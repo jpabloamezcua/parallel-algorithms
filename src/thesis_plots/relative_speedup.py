@@ -1,4 +1,5 @@
 from header import *
+import matplotlib.ticker as mticker
 
 # dataset: main model simulation
 
@@ -26,67 +27,79 @@ def speedup_for_available_processors(parallel_data,sequential_data,problem,
     fig, ax = plt.subplots(1,1,figsize=(6.55,3.25),dpi=200,layout='tight')
     ax.grid(axis='y', alpha=0.3)
 
-    # print(top_adjusted_curve)
-    # print(pc_adjusted_curve)
+    # Define a new set of colors for this plot to distinguish it
+    plot_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
+
     first_year = CUR_YEAR
     final_y_vals = []
-    wanted_lines = [(top_adjusted_curve,PROCESSOR_COLORS[0],2),
-                    (pc_adjusted_curve,PROCESSOR_COLORS[1],4)]
+
+    wanted_lines = [
+        (top_adjusted_curve, plot_colors[0], "Top Supercomputers", 2),
+        (pc_adjusted_curve, plot_colors[1], "Personal Computers", 3),
+    ]
+
     if seq:
-        seq_curve = problem_relative_speedup_data(parallel_data,sequential_data,problem,n,p=1)
-        wanted_lines.append((seq_curve,PROCESSOR_COLORS[2],3))
-        top_year = max(seq_curve.keys())
-        final_y_vals.append(seq_curve[top_year][0])
-    for dataset, col, order in wanted_lines:
-        top_years = sorted(dataset.keys())
-        top_points = [dataset[y][0] for y in top_years]
-        ax.step(top_years,top_points,c=str(col), where='post',zorder=order,lw=1.5)
-        ax.hlines(y=top_points[-1],xmin=top_years[-1],xmax=CUR_YEAR+1,color=str(col),zorder=order,lw=1.5)
-        first_year = min(first_year,top_years[0])
-        final_y_vals.insert(-1,top_points[-1])
-        
+        seq_curve = problem_relative_speedup_data(parallel_data, sequential_data, problem, n, p=1)
+        wanted_lines.append((seq_curve, plot_colors[2], "Sequential", 4))  # Sequential last
+
+    final_labels = []
+    for dataset, color, label, z in wanted_lines:
+        years = sorted(dataset.keys())
+        values = [dataset[y][0] for y in years]
+        ax.step(years, values, c=color, where='post', zorder=z, lw=1.5)
+        ax.hlines(y=values[-1], xmin=years[-1], xmax=CUR_YEAR + 1, color=color, zorder=z, lw=1.5)
+        first_year = min(first_year, years[0])
+        final_labels.append((label, values[-1], color))
+
     # arrows
-    def offset_arrow(arrow_y=2018,base_curve=seq_curve,curve=top_adjusted_curve,size="normal"):
+    def offset_arrow(arrow_y,base_curve,curve,size="normal"):
         pre_year_index_seq = bisect.bisect(sorted(base_curve.keys()), arrow_y)-1
         prev_index_seq = base_curve[sorted(base_curve.keys())[pre_year_index_seq]][0]
         pre_year_index_top = bisect.bisect(sorted(curve.keys()), arrow_y)-1
         prev_index_top = curve[sorted(curve.keys())[pre_year_index_top]][0]
         ax.annotate(text='', xy=(arrow_y,prev_index_seq), xytext=(arrow_y,prev_index_top),
-                    arrowprops=dict(arrowstyle='<->',shrinkA=0,shrinkB=0,lw=1.2),zorder=6)
+                    arrowprops=dict(arrowstyle='<->', shrinkA=0, shrinkB=0, lw=0.8),
+                    zorder=6)
         offset = round(prev_index_top/prev_index_seq,0)
         text_pos=10**(math.log(prev_index_seq,10)+(math.log(prev_index_top,10)-math.log(prev_index_seq,10))/2)
-        ftsize = 6 if size == "small" else 10
+        ftsize = 4 if size == "small" else 6
         wght = 'roman' if size == "small" else size
-        ax.annotate(text=long_human_format(int(offset))+'$\\times$', xy=(arrow_y,text_pos-2.5),
-            ha='center',backgroundcolor='white',zorder=7,size=ftsize,weight=wght)
+        ax.annotate(text=long_human_format(int(offset))+'$\\times$', xy=(arrow_y+2,text_pos-2.5),
+            ha='center',bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.9),zorder=7,size=ftsize,weight=wght)
         pass
-    offset_arrow()
-    offset_arrow(arrow_y=2022,curve=pc_adjusted_curve,size="normal")
+
+    # Dynamically select years for the arrows
+    top_years = sorted(top_adjusted_curve.keys())
+    if len(top_years) > 1:
+        arrow_year_top = top_years[len(top_years) // 2]
+        offset_arrow(arrow_y=arrow_year_top, base_curve=seq_curve, curve=top_adjusted_curve, size="normal")
+
+    pc_years = sorted(pc_adjusted_curve.keys())
+    if len(pc_years) > 1:
+        arrow_year_pc = pc_years[-2] # Show a recent jump
+        offset_arrow(arrow_y=arrow_year_pc, base_curve=seq_curve, curve=pc_adjusted_curve, size="normal")
 
     # legend
-    # handles = []
-    # handles.append(mpatches.Patch(color=PROCESSOR_COLORS[0], label="Top Supercomputers"))
-    # handles.append(mpatches.Patch(color=PROCESSOR_COLORS[1], label="Personal Computers"))
-    # if seq:
-    #     handles.append(mpatches.Patch(color=PROCESSOR_COLORS[2], label="Sequential"))
-    # model_legend = ax.legend(handles=handles,loc="upper left", bbox_to_anchor=(0, 1))
-    # ax.add_artist(model_legend)
-    ax.text(CUR_YEAR+1,final_y_vals[0],"Top Supercomputers",color=PROCESSOR_COLORS[0],fontsize=8,verticalalignment='center')
-    ax.text(CUR_YEAR+1,final_y_vals[1],"Personal Computers",color=PROCESSOR_COLORS[1],fontsize=8,verticalalignment='center')
-    ax.text(CUR_YEAR+1,final_y_vals[2],"Sequential",color=PROCESSOR_COLORS[2],fontsize=8,verticalalignment='center')
+    for label, yval, color in final_labels:
+        ax.text(CUR_YEAR + 1, yval, label, color=color, fontsize=8, va='center')
 
     ax.set_yscale('log')
-    problem_name = problem_dict[problem]    
+
+    problem_name = problem_dict[problem]
     nice_n = "10^"+str(int(math.log(n,10)+1))
-    ax.set_title("Parallel Performance for "+problem_name+" Problem"+
-            "\nusing processors available at the time")
-    ax.set_ylabel("Parallel Speedup vs 1960 Sequential")
+    ax.set_title(f"Parallel Performance for {problem_name} Problem\n"
+               f"Using Processors Available at the Time\n"
+               f"Problem Size n={n:,}")
+    ax.set_ylabel("Parallel Speedup vs 1960 Sequential", fontsize=9)
     ax.set_xlabel("Year")
     ax.set_xlim(first_year-1,CUR_YEAR+1)
-    ax.set_yticks(ax.get_yticks(),[human_format(x.get_position()[1]) for x in ax.get_yticklabels()])
+    ax.yaxis.set_major_formatter(mticker.LogFormatterMathtext())
+    ax.yaxis.set_minor_locator(mticker.FixedLocator([1.0]))
+    def custom_minor_formatter(val, pos):
+        return "1" if val == 1.0 else ""
+    ax.yaxis.set_minor_formatter(mticker.FuncFormatter(custom_minor_formatter))
     plt.savefig(SAVE_LOC+'rel_speedup_n_'+nice_n+'.png')
     # plt.show()
-
 
 def new_data_for_speedup_for_available_processors(parallel_data,sequential_data,
                                     problem,top_proc_data=top_processor_data,
@@ -95,7 +108,7 @@ def new_data_for_speedup_for_available_processors(parallel_data,sequential_data,
     returns first the pc, then the top curve
     '''
     to_return = []
-    for dataset in [pc_proc_data, top_proc_data]: 
+    for dataset in [pc_proc_data, top_proc_data]:
         to_return.append(new_speedup_for_given_processors_data(parallel_data,sequential_data,
                                     problem,dataset,n=n))
     return to_return
@@ -105,7 +118,7 @@ def new_speedup_for_given_processors_data(parallel_data,sequential_data,
     # print(problem)
     # p_curve = problem_relative_speedup_data(parallel_data,sequential_data,problem,n,p)
 
-    # for all values of p that we're interested in, compute their curves, then 
+    # for all values of p that we're interested in, compute their curves, then
     # for the years they're valid, check if they improve things
 
     # initialize final curve to the best sequential results
@@ -154,12 +167,12 @@ def new_speedup_for_given_processors_data(parallel_data,sequential_data,
                 cur_i += 1
                 if two_finger_year not in cur_years:
                     cur_years.insert(cur_i,two_finger_year)
-                
+
                 # print(cur_i)
                 # print(cur_years)
                 # print(final_curve)
                 # delete all future "improvements" that are now worse
-                while (cur_i+1<len(cur_years)) and (final_curve[cur_years[cur_i+1]][0] 
+                while (cur_i+1<len(cur_years)) and (final_curve[cur_years[cur_i+1]][0]
                                             <= final_curve[cur_years[cur_i]][0]):
                     del final_curve[cur_years[cur_i+1]]
                     del cur_years[cur_i+1]
@@ -167,7 +180,7 @@ def new_speedup_for_given_processors_data(parallel_data,sequential_data,
                     # print(cur_i)
                     # print(cur_years)
                     # print(final_curve)
-                    
+
             elif p_i + 1 < len(p_years):
                 cur_i = bisect.bisect(cur_years,p_years[p_i+1])-1
 
@@ -209,7 +222,7 @@ def available_processors(top_proc_data, pc_proc_data):
         ax.hlines(y=top_points[-1],xmin=top_years[-1],xmax=CUR_YEAR+1,color=str(col),zorder=order)
         first_year = min(first_year,top_years[0])
         final_y_vals.append(top_points[-1])
-    
+
     # legend
     ax.text(CUR_YEAR+1,final_y_vals[0],"Top Supercomputers",color=PROCESSOR_COLORS[0],fontsize=8,verticalalignment='center')
     ax.text(CUR_YEAR+1,final_y_vals[1],"Personal Computers",color=PROCESSOR_COLORS[1],fontsize=8,verticalalignment='center')
@@ -279,8 +292,8 @@ def problem_relative_speedup_graph(parallel_data,sequential_data,problems,
                     name = curve[y][2]
                     xy = (y+0.1,curve[y][0]*0.9)
                     if xy not in points_with_labels:
-                        ax.annotate(sequential_data[name]["auth"]+'\n'+str(y), 
-                            multialignment='center', fontsize=10,xy=xy, 
+                        ax.annotate(sequential_data[name]["auth"]+'\n'+str(y),
+                            multialignment='center', fontsize=10,xy=xy,
                             xycoords='data', ha='left', va='top')
                         points_with_labels.add(xy)
             max_speedup_value = max(max_speedup_value, max([curve[y][0] for y in years]))
@@ -295,7 +308,7 @@ def problem_relative_speedup_graph(parallel_data,sequential_data,problems,
             locc="upper left"
         else:
             locc = "lower left"
-        legend = ax.legend(handles=handles,loc=locc, bbox_to_anchor=(1, 0.5), 
+        legend = ax.legend(handles=handles,loc=locc, bbox_to_anchor=(1, 0.5),
                                 title="Number of processors for the\n"+problem_name+"\nproblem")
         ax.add_artist(legend)
 
@@ -304,7 +317,7 @@ def problem_relative_speedup_graph(parallel_data,sequential_data,problems,
     problem_name = problem_dict[problems[0]]+" problem" if len(problems)==1 else (
         problem_dict[problems[0]]+" and the "+ problem_dict[problems[1]]+" problems")
     ax.set_title("Parallel Performance for the "+problem_name+"\n$n="+get_nice_n(n)+"$")
-    ax.set_ylabel("Speedup") 
+    ax.set_ylabel("Speedup")
     ax.set_xlabel("Year")
     ax.set_xlim(first_year-1,CUR_YEAR+1)
     plt.show()
@@ -336,7 +349,7 @@ def problem_relative_speedup_data(parallel_data,sequential_data,problem,n,p):
 
     # print([par_data[v]["year"] for v in par_names])
     # print(len(par_data))
-    
+
     seq_data = {k: v for k, v in sequential_data.items() if v["problem"]==problem}
     seq_names = list(seq_data.keys())
     seq_names.sort(key= lambda name: (seq_data[name]["year"], seq_data[name]["time"]))
@@ -373,7 +386,7 @@ def problem_relative_speedup_data(parallel_data,sequential_data,problem,n,p):
         warnings.warn("No algorithms found (sequential or parallel) for problem "+str(problem))
         return {}
     assert first_time is not None
-    
+
     # print(first_time)
 
     speedup_curve = {}
@@ -398,7 +411,7 @@ def problem_relative_speedup_data(parallel_data,sequential_data,problem,n,p):
             i+=1
         else:
             time = seq_data[seq_names[j]]["time"]
-            seq_rt = get_comp_fn(time)(n)            
+            seq_rt = get_comp_fn(time)(n)
             if (first_time/seq_rt) > best_speedup:
                 best_speedup = first_time/seq_rt
                 speedup_curve[year_j] = (best_speedup,False,seq_names[j])
