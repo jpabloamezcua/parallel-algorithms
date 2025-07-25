@@ -1,5 +1,4 @@
 # header used for basically every plot
-
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
@@ -36,20 +35,32 @@ from src.helper_functions import *
 
 
 plt.style.use('default')
-    
+
 CUR_YEAR=2024
 MAIN_MODEL = 330 # MIMD-TC CRCW
 
-all_colors = ['', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', 
+all_colors = ['', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff',
                 '#777777',
               '#7700ff', '#0077ff', '#00ff77', '#777700', '#77ff77', '#ff7777', '#000000']
 
 COLORS = list(mcolors.TABLEAU_COLORS.values())
 
 PROCESSOR_COLORS = ['#3cb44b','#ffe119','#a9a9a9'] # green, yellow, grey
-# MODEL_COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', 
+# MODEL_COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff',
 #                 '#00ffff', '#777777', '#7700ff', '#469990']
 SEQ_PAR_COLORS = ['#F5C8AF','#58D68D']
+
+#blue
+ALGO_COLORS = ["#AEDBFF", "#369BFF", "#6FBFFF"]
+ALGO_LINE_COLOR ="#0A2A4F"
+#red
+# ALGO_COLORS = ["#FFC1C1", "#E63946", "#FF6B6B"]
+# ALGO_LINE_COLOR ="#4B0A0A"
+
+n_COLORS = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
+
+COLORS_GRADIENT = ['#88CCEE', '#6BAEDC', '#4E94C6', '#3970A5', '#2B5580']
+WORK_EFF_COLORS =["#4477AA", "#88CCEE", "#FDB863", "#D55E00"]
 
 MODEL_COLORS = {
     100: '#0000ff', # 130
@@ -77,8 +88,12 @@ MODEL_COLORS = {
     800: '#dcbeff'}
 
 # all PRAMs, MIMDs, and SIMDs
-PRAM_LIKE_MODELS = {100, 110, 120, 130, 131, 132, 133, 135, 200, 210, 220, 
+PRAM_LIKE_MODELS = {100, 110, 120, 130, 131, 132, 133, 135, 200, 210, 220,
                     300, 310, 320, 330}
 
 
-SAVE_LOC = "Plots/PostFeedback/"
+# SAVE_LOC = "Plots/PostFeedback/"
+#SAVE_LOC = "Plots/Feb18 data/"
+# SAVE_LOC = "Plots/Mar9 data/"
+#SAVE_LOC = "Plots/May1 data/"
+SAVE_LOC = "Plots/Jul21 data/"
