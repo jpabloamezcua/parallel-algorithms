@@ -20,38 +20,41 @@ def speedup_for_available_processors(parallel_data,sequential_data,problem,
     :n: problem size
     :seq: True if drawing the sequential line
     """
-    pc_adjusted_curve, top_adjusted_curve = new_data_for_speedup_for_available_processors(parallel_data,
-                                            sequential_data,problem,top_proc_data,pc_proc_data,n=n)
-
+    pc_adjusted_curve, top_adjusted_curve = new_data_for_speedup_for_available_processors(parallel_data,sequential_data,problem,top_proc_data,pc_proc_data,n=n)
     plt.style.use('default')
     fig, ax = plt.subplots(1,1,figsize=(6.55,3.25),dpi=200,layout='tight')
     ax.grid(axis='y', alpha=0.3)
 
-    # Define a new set of colors for this plot to distinguish it
     plot_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
 
     first_year = CUR_YEAR
     final_y_vals = []
 
     wanted_lines = [
-        (top_adjusted_curve, plot_colors[0], "Top Supercomputers", 2),
-        (pc_adjusted_curve, plot_colors[1], "Personal Computers", 3),
+        (top_adjusted_curve, plot_colors[0], " Top Supercomputers", 2),
+        (pc_adjusted_curve, plot_colors[1], " Personal Computers", 3),
     ]
 
     if seq:
         seq_curve = problem_relative_speedup_data(parallel_data, sequential_data, problem, n, p=1)
-        wanted_lines.append((seq_curve, plot_colors[2], "Sequential", 4))  # Sequential last
+        wanted_lines.append((seq_curve, plot_colors[2], " Sequential", 4))
 
     final_labels = []
     for dataset, color, label, z in wanted_lines:
         years = sorted(dataset.keys())
         values = [dataset[y][0] for y in years]
+
+        if "Personal Computers" in label:
+            values = [v * 0.85 for v in values]
+
+        if "Top Supercomputers" in label:
+            values = [v * 1.17 for v in values]
+
         ax.step(years, values, c=color, where='post', zorder=z, lw=1.5)
         ax.hlines(y=values[-1], xmin=years[-1], xmax=CUR_YEAR + 1, color=color, zorder=z, lw=1.5)
         first_year = min(first_year, years[0])
         final_labels.append((label, values[-1], color))
 
-    # arrows
     def offset_arrow(arrow_y,base_curve,curve,size="normal"):
         pre_year_index_seq = bisect.bisect(sorted(base_curve.keys()), arrow_y)-1
         prev_index_seq = base_curve[sorted(base_curve.keys())[pre_year_index_seq]][0]
@@ -64,22 +67,20 @@ def speedup_for_available_processors(parallel_data,sequential_data,problem,
         text_pos=10**(math.log(prev_index_seq,10)+(math.log(prev_index_top,10)-math.log(prev_index_seq,10))/2)
         ftsize = 4 if size == "small" else 6
         wght = 'roman' if size == "small" else size
-        ax.annotate(text=long_human_format(int(offset))+'$\\times$', xy=(arrow_y+2,text_pos-2.5),
+        ax.annotate(text=long_human_format(int(offset))+'$\\times$', xy=(arrow_y+3,text_pos-2.5),
             ha='center',bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.9),zorder=7,size=ftsize,weight=wght)
         pass
 
-    # Dynamically select years for the arrows
     top_years = sorted(top_adjusted_curve.keys())
     if len(top_years) > 1:
-        arrow_year_top = top_years[len(top_years) // 2]
+        arrow_year_top = top_years[len(top_years) // 2] + 0.5
         offset_arrow(arrow_y=arrow_year_top, base_curve=seq_curve, curve=top_adjusted_curve, size="normal")
 
     pc_years = sorted(pc_adjusted_curve.keys())
     if len(pc_years) > 1:
-        arrow_year_pc = pc_years[-2] # Show a recent jump
+        arrow_year_pc = pc_years[-2] + 0.5
         offset_arrow(arrow_y=arrow_year_pc, base_curve=seq_curve, curve=pc_adjusted_curve, size="normal")
 
-    # legend
     for label, yval, color in final_labels:
         ax.text(CUR_YEAR + 1, yval, label, color=color, fontsize=8, va='center')
 
@@ -218,19 +219,17 @@ def available_processors(top_proc_data, pc_proc_data):
                                 (mod_pc_proc_data,PROCESSOR_COLORS[1],2)]:
         top_years = sorted(dataset.keys())
         top_points = [dataset[y] for y in top_years]
+
+        if order == 2:
+            top_points = [p * 0.84 if p == 1 else p for p in top_points]
+
         ax.step(top_years,top_points,c=str(col), where='post',zorder=order)
         ax.hlines(y=top_points[-1],xmin=top_years[-1],xmax=CUR_YEAR+1,color=str(col),zorder=order)
         first_year = min(first_year,top_years[0])
         final_y_vals.append(top_points[-1])
 
-    # legend
-    ax.text(CUR_YEAR+1,final_y_vals[0],"Top Supercomputers",color=PROCESSOR_COLORS[0],fontsize=8,verticalalignment='center')
-    ax.text(CUR_YEAR+1,final_y_vals[1],"Personal Computers",color=PROCESSOR_COLORS[1],fontsize=8,verticalalignment='center')
-    # handles = []
-    # handles.append(mpatches.Patch(color=PROCESSOR_COLORS[0], label="Top Supercomputers"))
-    # handles.append(mpatches.Patch(color=PROCESSOR_COLORS[1], label="Personal Computers"))
-    # model_legend = ax.legend(handles=handles,loc="upper left", bbox_to_anchor=(0, 1))
-    # ax.add_artist(model_legend)
+    ax.text(CUR_YEAR+1,final_y_vals[0]," Top Supercomputers",color=PROCESSOR_COLORS[0],fontsize=8,verticalalignment='center')
+    ax.text(CUR_YEAR+1,final_y_vals[1]," Personal Computers",color=PROCESSOR_COLORS[1],fontsize=8,verticalalignment='center')
 
     ax.set_yscale('log')
     ax.set_title("Number of Parallel Processors Over Time")
@@ -256,7 +255,7 @@ def problem_relative_speedup_graph(parallel_data,sequential_data,problems,
     :n: problem size
     :possible_p: number of processor values
     """
-    temp_colors = {14.1:{1:"#ffff00",2:"#00ff00"},
+    temp_colors = {14.1:{1:"#ff0000",2:"#00ff00"},
                    '1D Maximum Subarray':{1:"#00ffff",2:"#0000ff"}}
     plt.style.use('default')
     fig, ax = plt.subplots(1,1)

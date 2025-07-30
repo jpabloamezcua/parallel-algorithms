@@ -83,7 +83,6 @@ def NEW_span_comparison_best_vs_work_efficient(algs):
     best_span_values = [categories_dict[x]["bs span"] / num * 100 for x in categories]
     we_span_values = [categories_dict[x]["we span"] / num * 100 for x in categories]
 
-    # Bar properties
     y_positions = [0.6, 0.4]
     bar_height = 0.15
 
@@ -212,27 +211,37 @@ def NEW_w_seq_span_comparison_best_vs_work_efficient(algs):
 
     sorted_cats = sorted(category_max_bar.items(), key=lambda item: item[1][2] + item[1][1] / 2)
     label_threshold = 7
-    custom_offsets = {
+
+    custom_y_offsets = {
         "sublinear": 0.22,
         "cubic": -0.07,
+        "supracubic/\nexponential": -0.12,
     }
-    default_offset = 0.12
+    custom_x_offsets = {
+        "supracubic/\nexponential": -0.6,
+    }
+    default_y_offset = 0.12
 
     for cat, (bar_idx, val, left, y) in sorted_cats:
-        center_x = left + val / 2
+        x_offset = custom_x_offsets.get(cat, 0)
+        y_offset = custom_y_offsets.get(cat, default_y_offset)
+        center_x = left + val / 2 + x_offset
 
         if val > label_threshold:
-            # Place label inside wider bars
             ax.text(
                 center_x, y, cat,
                 ha='center', va='center', fontsize=8, color='white', weight='bold', zorder=3
             )
         else:
-            # Place label outside smaller bars with an arrow
-            y_offset = custom_offsets.get(cat, default_offset)
-            ax.annotate(cat.replace("\n", " "), xy=(center_x, y), xytext=(center_x, y + bar_height / 2 + y_offset), ha='center', va='bottom', arrowprops=dict(arrowstyle='-', color='black', lw=0.8, shrinkB=3), fontsize=8, weight='bold', color='white')
+            ax.annotate(
+                cat.replace("\n", " "),
+                xy=(center_x, y),
+                xytext=(center_x, y + bar_height / 2 + y_offset),
+                ha='center', va='bottom',
+                arrowprops=dict(arrowstyle='-', color='black', lw=0.8, shrinkB=3),
+                fontsize=8, weight='bold', color='white'
+            )
 
-    # --- Final Formatting ---
     ax.set_yticks(y_positions)
     ax.set_yticklabels(
         ["Fastest Algorithm\n(Span)", "Fastest Work-Efficient\nAlgorithm (Span)", "Fastest Sequential\nAlgorithm (Runtime)"],
