@@ -45,10 +45,10 @@ all_colors = ['', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00fff
 
 COLORS = list(mcolors.TABLEAU_COLORS.values())
 
-PROCESSOR_COLORS = ['#3cb44b','#ffe119','#a9a9a9'] # green, yellow, grey
+PROCESSOR_COLORS = ['#3cb44b','#0077ff','#a9a9a9'] # green, yellow, grey
 # MODEL_COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff',
 #                 '#00ffff', '#777777', '#7700ff', '#469990']
-SEQ_PAR_COLORS = ['#F5C8AF','#58D68D']
+SEQ_PAR_COLORS = ['#ff7777','#58D68D']
 
 #blue
 ALGO_COLORS = ["#AEDBFF", "#369BFF", "#6FBFFF"]

@@ -21,6 +21,7 @@ from src.paper_plots.num_overhead_vs_span import *
 from src.paper_plots.problem_overhead_vs_proc import *
 from src.paper_plots.problem_speedup_vs_proc import *
 from src.paper_plots.aggregate_switch_to_work_ineff import *
+#from src.paper_plots.average_imprvmnt_rates import sankey_style_graph
 
 from converter import *
 from data.processor_data_acquisition import *
@@ -304,21 +305,21 @@ histo_buckets = [
 
 
 ######### FIGURE 1 #########
-print("figure 1.1: Algorithm Improvements over Time")
-#TODO: test if what i have is correct (check which problems have lots of variations, do they scale down intuitively)
+print("figure 1.1: Algorithm Improvements over Time") #Done
+#TODO: test if what i have is correct (check which problems have lots of variations, do they scale down intuitively) #Looks good
 average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES)
 average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES,var_weights="thesis_weight")
 
-print("figure ??: Number of Parallel Processors Over Time")
+print("figure ??: Number of Parallel Processors Over Time") #This works (maybe double check)
 #TODO: change colors? #done
 available_processors(top_processor_data,pc_processor_data)
 
-print("figure ??: Parallel Performance for All Pairs Shortest Paths Problem using processors available at the time")
-#TODO: fix the manual gap labels #done?
+print("figure ??: Parallel Performance for All Pairs Shortest Paths Problem using processors available at the time") #done
+#TODO: fix the manual gap labels #done
 #TODO: maybe do different colors for this one and the one above #done
-#TODO: this is probably sparse apsp, so why does the problem say apsp? data error?
+#TODO: this is probably sparse apsp, so why does the problem say apsp? data error? #I think it's okay
 #TODO: if later the autoformat changes then make sure the y range is bottom:1, top: whatever the top is #done?
-#TODO: are these proc values correct (hardcoded?)
+#TODO: are these proc values correct (hardcoded?) #Done?
 speedup_for_available_processors(simulated_par_data,full_seq_data,'APSP', top_processor_data,pc_processor_data,n=10**6,seq=True)
 
 
@@ -332,18 +333,18 @@ print("sankey style figure")
 #sankey_style_graph(full_data,simulated_par_data, n=10**6, p=8)
 # #big
 #sankey_style_graph(full_data,simulated_par_data, n=10**9, p=10**3)
-
+#TODO: Make another graph
 
 ######### FIGURE 3 #########
 print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Computational Length")
 #TODO: make sure that the hardcoded values in this graph are still ok
 #span_vs_work_multiple_probs_pareto_frontier(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
 print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Speedup Relative to Sequantial Time")
-numerical_overhead_vs_span(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'],n=10**6)
+numerical_overhead_vs_span(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'],n=10**6) #done
 
-print("figure 1.3: Best Span vs Best Work-efficient Algorithm Span for all Problems")
+print("figure 1.3: Best Span vs Best Work-efficient Algorithm Span for all Problems") #done
 #TODO: make labels look nicer #done
-#TODO: fix that one dotted line (change going to 0 to going to 100%) #done?
+#TODO: fix that one dotted line (change going to 0 to going to 100%) #done
 NEW_w_seq_span_comparison_best_vs_work_efficient(full_problem_data)
 
 
@@ -381,7 +382,7 @@ NEW_work_overhead_histogram_graph_multiple_p(simulated_par_data,full_seq_data,ps
                             max_p=10**9,allowed_models=set(model_dict.keys()))
 fastest_algo_work_eff(simulated_par_data, n=10**6, min_p=1, max_p=10**6)
 # Ensure full_data is properly loaded before plotting #done
-fastest_algo_work_eff(full_data, simulated_par_data, n=10**6, min_p=1, max_p=10**6, step=1)
+fastest_algo_work_eff(full_data, n=10**6, min_p=1, max_p=10**6, step=1)
 
 
 
@@ -417,7 +418,3 @@ fastest_algo_work_eff(full_data, simulated_par_data, n=10**6, min_p=1, max_p=10*
 #             full_problem_data[prob]["we span"]
 
 #         ])
-
-
-
-print("finished main")
