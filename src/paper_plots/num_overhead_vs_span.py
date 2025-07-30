@@ -19,24 +19,26 @@ def numerical_overhead_vs_span(par_data,seq_data,problems,n=10**6,allowed_models
         print(pareto_points)
         seq_time = seq_data[best_seq]["time"]
         if problem == "Topological Sorting":
-            pareto_points = ['56Chaudhuri (1992)',
-                             #ID used to be 18 in the name but not anymore?? im changing the hardcoding and hoping for it to not mess up down the line
-                             #'56718Chaudhuri (1992)',
-                            #   '56719Li, Pan, Shen (2003)',
-                            #'56720Schudy (2008)',
-                            #'13Schudy (2008)'
-                            '56Schudy (2008)'
-                            ]
+            # Current format (MAY1 data)
+            pareto_points = [
+                '56Chaudhuri (1992)',
+                '56Li, Pan, Shen (2003)',
+                '56Schudy (2008)'
+            ]
+
+            # July 1 data format (commented out for reference)
+            # pareto_points = [
+            #     '56718Chaudhuri (1992)',
+            #     '56719Li, Pan, Shen (2003)',
+            #     '56720Schudy (2008)'
+            # ]
         elif problem == "LCS":
             pareto_points = [#'4256Aggarwal & Park (1988)',
                             '4Aggarwal & Park (1988)',
-
                             #  '4257Alves, Cáceres, Song (2003)',
-                            '4Babu, Saxena (1997)'
                             # '4260Babu, Saxena (1997)',
                              #'4261Babu, Saxena (1997)',
-                             #'4Babu, Saxena (1) (1997)',
-                             #'4Babu, Saxena (2) (1997)'
+                             '4Babu, Saxena (1997)',
                             #  '4267Hsu, Du (1984)',
                             #  '4270Krusche, Tiskin (2010)',
                             #  '4272Lin, Lu, Fang (1991)'
@@ -47,7 +49,6 @@ def numerical_overhead_vs_span(par_data,seq_data,problems,n=10**6,allowed_models
                               #'28595Kim, Chwa (1987)'
                               '28Kim, Chwa (1987)'
                               ]
-
         adj_points = []
         for p_name in pareto_points:
             span = par_data[p_name]["span"]

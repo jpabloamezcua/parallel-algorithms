@@ -1,5 +1,14 @@
 from header import *
 from src.thesis_plots.relative_speedup import *
+import seaborn as sns
+import matplotlib.cm as cm
+import numpy as np
+from matplotlib.patches import FancyArrowPatch
+import math
+import copy
+import bisect
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
 # dataset: main model simulation
 
@@ -9,6 +18,7 @@ from src.thesis_plots.relative_speedup import *
 ################################################################################
 
 # Distribution of average yearly improvement rates (original paper figure 3)
+
 
 
 def yearly_impr_rate_histo_grid(data,raw_buckets,n_values=[10**3,10**6,10**9],
