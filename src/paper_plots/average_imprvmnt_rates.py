@@ -322,7 +322,6 @@ def improvements(data, n=10**3,p=8,lower=False):
 
     return best_stats, first_stats
 
-# ... (rest of the code remains the same)
 
 def first_seq_names(data):
     '''returns: first_algos: dictionary by problem of algorithm names for the 1st algo of that problem'''
