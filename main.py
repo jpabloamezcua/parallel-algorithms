@@ -15,13 +15,12 @@ from src.thesis_plots.new_parallelism import *
 from src.thesis_plots.weak_scaling import *
 from src.thesis_plots.models import *
 from src.thesis_plots.varying_scaling import *
-from src.paper_plots import average_imprvmnt_rates
+from src.paper_plots.average_imprvmnt_rates import *
 from src.paper_plots.span_work_more_probs import *
 from src.paper_plots.num_overhead_vs_span import *
 from src.paper_plots.problem_overhead_vs_proc import *
 from src.paper_plots.problem_speedup_vs_proc import *
 from src.paper_plots.aggregate_switch_to_work_ineff import *
-#from src.paper_plots.average_imprvmnt_rates import sankey_style_graph
 
 from converter import *
 from data.processor_data_acquisition import *
@@ -29,6 +28,7 @@ from src.processed_data import full_data, rel_speedup_seq_data, aux_data, top_pr
 
 from src.processed_data import *
 import matplotlib.pyplot as plt
+
 
 
 
@@ -63,12 +63,12 @@ def patch_data_with_parallel_field(data_dict):
 ########## End of refactor data
 
 # print(find_proc_increase_supercomputer())
-# print(find_best_top_every_year("top500_pre_2008"))
+# print(find_best_top_every_year("top500_pre_08"))
 
 # print(find_best_top_every_year("cpu_short"))
 # print(find_proc_increase_commercial())
 
-model_sheet_name = "data/par_models_FEB18"
+model_sheet_name = "data/par_models_JUL21"
 old_sheet_name = "past_data/parallel_sheet_for_models_JAN_8"
 mod_map = {
     100: 130,
@@ -174,45 +174,6 @@ def year_stats():
     print(dec_dict)
 # year_stats()
 
-def overflow_debugging():
-    code1 = 8011.0
-    code2 = 8010.0
-    n = 10**3
-
-    huge1 = Huge(max(math.log(max(math.log(n,2),1),2),1),n-1)
-    huge1 = huge1 * (n * max(math.log(n,2),1))
-    base2 = max(math.log(max(math.log(n,2),1),2),1)
-    huge2 = Huge(base2, n+math.log(n,base2))
-
-    print(huge1)
-    print(huge2)
-    print(huge1.evaluate())
-    print(huge1 > huge2)
-    print(huge1 == huge2)
-
-    print("--------------------------------------")
-
-    print(max(math.log(n,2),1))
-    print(max(math.log(max(math.log(n,2),1),2),1))
-    print(decimal.Decimal(int(n-1)))
-
-    print(get_seq_runtime(code1,n)==huge1)
-    print(get_seq_runtime(code1,n)==huge1.evaluate())
-
-    print("--------------------------------------")
-
-    print(get_seq_runtime(code1,n))
-    print(log(get_seq_runtime(code1,n),10))
-
-    print(get_seq_runtime(code2,n))
-
-    rt = get_runtime(code1,code2,n,p=1)
-
-    print("runtime:")
-    print(rt)
-
-    pass
-# overflow_debugging()
 
 
 
@@ -273,9 +234,6 @@ def overflow_debugging():
 #check data correctness
 with open("aux.json", "w") as json_file:
     json.dump(full_problem_data, json_file, indent=4)
-
-
-
 print("running functions to make the actual graphs for the paper")
 ##### overall TODO's #####
 #TODO: in the google sheet, check all relevant parallel algos have subproblem
@@ -303,14 +261,13 @@ histo_buckets = [
             # {"max": math.inf, "label": ">1000%"},
             ]
 
-
 ######### FIGURE 1 #########
 print("figure 1.1: Algorithm Improvements over Time") #Done
 #TODO: test if what i have is correct (check which problems have lots of variations, do they scale down intuitively) #Looks good
 average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES)
 average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES,var_weights="thesis_weight")
 
-print("figure ??: Number of Parallel Processors Over Time") #This works (maybe double check)
+#print("figure ??: Number of Parallel Processors Over Time") #This works (maybe double check)
 #TODO: change colors? #done
 available_processors(top_processor_data,pc_processor_data)
 
@@ -338,7 +295,7 @@ print("sankey style figure")
 ######### FIGURE 3 #########
 print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Computational Length")
 #TODO: make sure that the hardcoded values in this graph are still ok
-#span_vs_work_multiple_probs_pareto_frontier(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
+span_vs_work_multiple_probs_pareto_frontier(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
 print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Speedup Relative to Sequantial Time")
 numerical_overhead_vs_span(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'],n=10**6) #done
 
@@ -350,20 +307,31 @@ NEW_w_seq_span_comparison_best_vs_work_efficient(full_problem_data)
 
 ######### FIGURE 4 #########
 print("figure 1.2: Algorithm Problem Average Yearly Improvement Rate (Sequantial and Parallel)")
-#this one (should be) just parallel improvement: measures from best seq
+#this one (should be) just  improvement: measures from best seq
 #TODO: add labels to axis #done
-average_imprvmnt_rates.yearly_impr_rate_histo_grid(
+
+yearly_impr_rate_histo_grid(
     full_data,
     histo_buckets,
     n_values=[10**3, 10**6, 10**9],
     p_values=[8, 10**3, 10**6],
     measure="rt"
 )
+histo_buckets_temp = [
+    {"max": 0.05, "label": "0-5%"},
+    {"max": 0.1, "label": "5-10%"},
+    {"max": 0.2, "label": "10-20%"},
+    {"max": 0.3, "label": "20-30%"},
+    {"max": 0.4, "label": "30-40%"},
+    {"max": math.inf, "label": ">40%"}
+]
+EVERYTHING_yearly_impr_rate_histo_grid(full_data, histo_buckets_temp,n_values=[10**3,10**6,10**9],
+                               p_values=[8,10**3,10**6],measure="rt",variation="just_par_impr")
 
 
-
+print("STARTS_______________________")
 ######### FIGURE 5 #########
-print("figure 1.4: Fastest Parallel Algorithm and Work Overhead for Topological Sorting (in dense graphs)")
+#print("figure 1.4: Fastest Parallel Algorithm and Work Overhead for Topological Sorting (in dense graphs)")la
 #TODO: beutify algo names #done?
 #TODO: place algo names/ "work overhead" somewhere nicer #done
 #TODO: in actual paper will need have something in caption that points to an explanation in the text about ignoring constants
@@ -373,17 +341,16 @@ print("figure 1.4: Fastest Parallel Algorithm and Work Overhead for Topological 
 #TODO: when things dont fit, move label outside of graph and add arrow #done?
 #TODO: methodology addition about how we estimate work overhead and when we use each
 problem_speedup_vs_proc_three_curves(full_data, 13.1, n_values=[10**3, 10**6, 10**9], max_p=10**10)
-
 ######### FIGURE 6 #########
-print("figure 1.5: Work Overhead for the fastest algorithm")
+print("figure 1.5: Work Overhead for the fastest algorithm") #done
 #TODO: change % to x #Done
 NEW_work_overhead_histogram_graph_multiple_p(simulated_par_data,full_seq_data,pset,p_values=[8,10**3,10**6],n_values=[10**3,10**6,10**9],
                             upper_bounds=[0,100,1000,10000,math.inf],
                             max_p=10**9,allowed_models=set(model_dict.keys()))
-fastest_algo_work_eff(simulated_par_data, n=10**6, min_p=1, max_p=10**6)
+#fastest_algo_work_eff(simulated_par_data, n=10**6, min_p=1, max_p=10**6)
 # Ensure full_data is properly loaded before plotting #done
-fastest_algo_work_eff(full_data, n=10**6, min_p=1, max_p=10**6, step=1)
-
+#fastest_algo_work_eff(full_data, n=10**6, min_p=1, max_p=10**6, step=1)
+count_fastest_algo_by_category(full_data, simulated_par_data, n=10**6, min_p=1, max_p=10**6, step=1)
 
 
 
