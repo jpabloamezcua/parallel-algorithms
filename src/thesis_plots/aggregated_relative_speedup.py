@@ -2,9 +2,9 @@ from header import *
 from src.thesis_plots.relative_speedup import *
 
 
-# this computes the relative speedup curve of every problem 
-# (as runtime/first-(seq)-algorithm-runtime for all algos with rt improvements), 
-# then aggregates it across all problems as follows: for every year, we take 
+# this computes the relative speedup curve of every problem
+# (as runtime/first-(seq)-algorithm-runtime for all algos with rt improvements),
+# then aggregates it across all problems as follows: for every year, we take
 # the 25th percentile, median, and 75th percentile speedup. We then plot the
 # 3 curves obtained that way.
 
@@ -14,7 +14,7 @@ def aggregated_relative_speedup(parallel_data,sequential_data,n=10**6):
     """
     seq_final_data, pc_final_data, sc_final_data = aggregated_relative_speedup_data(parallel_data,
                                                                                 sequential_data,n)
-    
+
     par_names = list(parallel_data.keys())
     par_names.sort(key= lambda name: (parallel_data[name]["year"]))
     first_year =parallel_data[par_names[0]]["year"]
@@ -39,13 +39,13 @@ def aggregated_relative_speedup(parallel_data,sequential_data,n=10**6):
             col = local_colors[i]
             ax.step(years, perc, c=str(col), where='post')
             ax.hlines(y=perc[-1],xmin=years[-1],xmax=CUR_YEAR+1,color=str(col))
-        
+
         ax.set_yscale('log')
         ax.set_title(name+" Aggregated Relative Speedup\nfor n="+nice_n)
-        ax.set_ylabel("Relative Speedup") 
+        ax.set_ylabel("Relative Speedup")
         ax.set_xlabel("Year")
         ax.set_xlim(first_year-1,CUR_YEAR+1)
-        plt.show()
+        #plt.show()
 
 
 def new_aggregated_relative_speedup_graph(parallel_data,sequential_data,n=10**6):
@@ -54,9 +54,9 @@ def new_aggregated_relative_speedup_graph(parallel_data,sequential_data,n=10**6)
     """
     final_data_25, final_data_50, final_data_75 = perc_based_aggr_rel_speedup_data(parallel_data,
                                                                                 sequential_data,n)
-    
+
     # print(final_data_75)
-    
+
     par_names = list(parallel_data.keys())
     par_names.sort(key= lambda name: (parallel_data[name]["year"]))
     first_year =parallel_data[par_names[0]]["year"]
@@ -83,7 +83,7 @@ def new_aggregated_relative_speedup_graph(parallel_data,sequential_data,n=10**6)
             ax[j].step(years, perc, c=str(col), where='post')
             ax[j].hlines(y=perc[-1],xmin=years[-1],xmax=CUR_YEAR+1,color=str(col))
             print(ds_name + " " + str(i) + ": " + str(perc[-1]))
-    
+
         # arrows
         def offset_arrow(arrow_y=2018.5,base_curve=dataset[2],curve=dataset[0],size="normal",endpt=0):
             # print(base_curve)
@@ -110,15 +110,15 @@ def new_aggregated_relative_speedup_graph(parallel_data,sequential_data,n=10**6)
         ax[j].set_yscale('log')
         ax[j].title.set_text(ds_name)
         ax[j].set_xlim(first_year-1,CUR_YEAR+1)
-        
+
         j+=1
 
     max_y_lim = (min(ax[k].get_ylim()[0] for k in range(len(datasets))),
                  max(ax[k].get_ylim()[1] for k in range(len(datasets))))
     for j in range(len(datasets)):
         ax[j].set_ylim(max_y_lim)
-        
-    ax[1].set_ylabel("Relative Speedup") 
+
+    ax[1].set_ylabel("Relative Speedup")
     ax[2].set_xlabel("Year")
 
     # legend
@@ -132,7 +132,7 @@ def new_aggregated_relative_speedup_graph(parallel_data,sequential_data,n=10**6)
     extra_title = "Relative Speedup Percentiles for all Problems\nfor n="+nice_n
     ax[0].set_title(extra_title+"\n"+"25th percentile")
     # plt.savefig(SAVE_LOC+'aggr_rel_speedup.png')
-    plt.show()
+    #plt.show()
 
 def perc_based_aggr_rel_speedup_data(parallel_data,sequential_data,n):
     '''
@@ -141,7 +141,7 @@ def perc_based_aggr_rel_speedup_data(parallel_data,sequential_data,n):
     '''
     seq_final_data, pc_final_data, sc_final_data = aggregated_relative_speedup_data(parallel_data,
                                                                                 sequential_data,n)
-    
+
     # print(type(seq_final_data))
     # print(seq_final_data)
     final_data_25 = []
@@ -152,7 +152,7 @@ def perc_based_aggr_rel_speedup_data(parallel_data,sequential_data,n):
         fin_data.append(sc_final_data[p])
         fin_data.append(pc_final_data[p])
         fin_data.append(seq_final_data[p])
-    
+
     return final_data_25, final_data_50, final_data_75
 
 
@@ -168,7 +168,7 @@ def debug(parallel_data,sequential_data,n=10**6):
         [pc_problem_curve, sc_problem_curve] = new_data_for_speedup_for_available_processors(parallel_data,
                                             sequential_data,problem,top_proc_data=top_processor_data,
                                             pc_proc_data=pc_processor_data,n=n) # TODO: unhardcode processor data
-        
+
         # print(seq_problem_curve)
         # print(pc_problem_curve)
         # print(sc_problem_curve)
@@ -191,7 +191,7 @@ def debug(parallel_data,sequential_data,n=10**6):
             ax.hlines(y=perc[-1],xmin=years[-1],xmax=CUR_YEAR+1,color=str(col))
 
         ax.set_yscale('log')
-        plt.show()
+       # plt.show()
         # break
     pass
 
@@ -210,7 +210,7 @@ def aggregated_relative_speedup_data(parallel_data,sequential_data,n):
     par_names.sort(key= lambda name: (parallel_data[name]["year"]))
     first_year =parallel_data[par_names[0]]["year"]
     # print(first_year)
-    
+
     problems = sorted(list(get_problems(parallel_data)))
 
     # dict of years mapped to list of best speedups for all problems
@@ -228,7 +228,7 @@ def aggregated_relative_speedup_data(parallel_data,sequential_data,n):
         [pc_problem_curve, sc_problem_curve] = new_data_for_speedup_for_available_processors(parallel_data,
                                             sequential_data,problem,top_proc_data=top_processor_data,
                                             pc_proc_data=pc_processor_data,n=n) # TODO: unhardcode processor data
-        
+
         # add all year values to their lists
         seq_curve_years = sorted(seq_problem_curve.keys())
         pc_curve_years = sorted(pc_problem_curve.keys())
@@ -240,7 +240,7 @@ def aggregated_relative_speedup_data(parallel_data,sequential_data,n):
             else:
                 last_impr_y = seq_curve_years[bisect.bisect(seq_curve_years,year)-1]
                 sequential_aggregate_per_year_data[year].append(seq_problem_curve[last_impr_y][0])
-            # pc            
+            # pc
             if year < pc_curve_years[0]:
                 personal_c_aggregate_per_year_data[year].append(1)
             else:
@@ -252,11 +252,11 @@ def aggregated_relative_speedup_data(parallel_data,sequential_data,n):
             else:
                 last_impr_y = sc_curve_years[bisect.bisect(sc_curve_years,year)-1]
                 super_comp_aggregate_per_year_data[year].append(sc_problem_curve[last_impr_y][0])
-            
+
     seq_final_data = [[],[],[]]
     pc_final_data = [[],[],[]]
     sc_final_data = [[],[],[]]
-    
+
     num_prob = len(problems)
     for year in range(first_year,CUR_YEAR+1):
         assert len(sequential_aggregate_per_year_data[year]) == num_prob
@@ -317,12 +317,12 @@ def aggregated_relative_speedup_data_aspect(parallel_data,sequential_data,n,aspe
         pass
     else:
         raise RuntimeError("Aspect needs to be one of seq, pc, or sc")
-    
+
     par_names = list(parallel_data.keys())
     par_names.sort(key= lambda name: (parallel_data[name]["year"]))
     first_year =parallel_data[par_names[0]]["year"]
     # print(first_year)
-    
+
     problems = get_problems(parallel_data)
 
     # dict of years mapped to list of best speedups for all problems
@@ -335,7 +335,7 @@ def aggregated_relative_speedup_data_aspect(parallel_data,sequential_data,n,aspe
                                                  problem,n=n,p=1)
         [pc_problem_curve, sc_problem_curve] = new_data_for_speedup_for_available_processors(parallel_data,
                                             sequential_data,problem,n=n)
-        
+
         # add all year values to their lists
         seq_curve_years = sorted(seq_problem_curve.keys())
         for year in range(first_year,CUR_YEAR+1):
@@ -345,9 +345,9 @@ def aggregated_relative_speedup_data_aspect(parallel_data,sequential_data,n,aspe
             else:
                 last_impr_y = seq_curve_years[bisect.bisect(seq_curve_years,year)-1]
                 sequential_aggregate_per_year_data[year].append(seq_problem_curve[last_impr_y])
-            
+
     seq_final_data = [[],[],[]]
-    
+
     num_prob = len(problems)
     perc_25 = int(0.25*num_prob)
     perc_50 = int(0.5*num_prob)
@@ -365,5 +365,3 @@ def aggregated_relative_speedup_data_aspect(parallel_data,sequential_data,n,aspe
 
     # return the percentiles as 3 lists
     return seq_final_data
-
-

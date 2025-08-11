@@ -136,12 +136,6 @@ def NEW_w_seq_span_comparison_best_vs_work_efficient(algs):
     """
     Generates a stacked horizontal bar chart comparing complexity for three
     algorithm types: fastest span, fastest work-efficient, and best sequential.
-
-    Features:
-    1.  **Improved Labeling**: Dynamically places labels inside or outside bars
-        with targeted adjustments to prevent overlap.
-    2.  **Corrected Flow Lines**: Dashed lines correctly track categories
-        between bars, even for categories with a zero-percent share.
     """
     num = len(algs)
     fun = complexity_category_1
@@ -210,17 +204,14 @@ def NEW_w_seq_span_comparison_best_vs_work_efficient(algs):
                 linestyle='--', color='gray', linewidth=0.8, alpha=0.7, zorder=1)
 
     sorted_cats = sorted(category_max_bar.items(), key=lambda item: item[1][2] + item[1][1] / 2)
-    label_threshold = 7
+    label_threshold = 0
 
     custom_y_offsets = {
-        "sublinear": 0.22,
-        "cubic": -0.07,
-        "supracubic/\nexponential": -0.12,
+
     }
     custom_x_offsets = {
-        "supracubic/\nexponential": -0.6,
     }
-    default_y_offset = 0.12
+    default_y_offset = 0
 
     for cat, (bar_idx, val, left, y) in sorted_cats:
         x_offset = custom_x_offsets.get(cat, 0)
@@ -228,18 +219,22 @@ def NEW_w_seq_span_comparison_best_vs_work_efficient(algs):
         center_x = left + val / 2 + x_offset
 
         if val > label_threshold:
+            rotation = 65 if cat == "supracubic/\nexponential" else 0
             ax.text(
                 center_x, y, cat,
-                ha='center', va='center', fontsize=8, color='white', weight='bold', zorder=3
+                ha='center', va='center', fontsize=8, color='white', weight='bold', zorder=3,
+                rotation=rotation
             )
         else:
+            rotation = 90 if cat == "supracubic/\nexponential" else 0
             ax.annotate(
                 cat.replace("\n", " "),
                 xy=(center_x, y),
                 xytext=(center_x, y + bar_height / 2 + y_offset),
                 ha='center', va='bottom',
                 arrowprops=dict(arrowstyle='-', color='black', lw=0.8, shrinkB=3),
-                fontsize=8, weight='bold', color='white'
+                fontsize=8, weight='bold', color='white',
+                rotation=rotation
             )
 
     ax.set_yticks(y_positions)

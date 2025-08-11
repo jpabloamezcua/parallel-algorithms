@@ -4,25 +4,27 @@ import matplotlib.ticker as mticker
 # dataset: main model simulation
 
 
-def speedup_for_available_processors(parallel_data,sequential_data,problem,
-                                top_proc_data,pc_proc_data,n=10**6,seq=False):
+def speedup_for_available_processors(parallel_data, sequential_data, problem,
+                                     top_proc_data, pc_proc_data, n=10**6, seq=False):
     """
     Plots the best available speedups for a given problem under the constraints
-    of available numbers of processors in two scenarios - personal computers,
+    of available numbers of processors in two scenarios: personal computers
     and the best supercomputers. Optionally also plots the available speedups
-    for sequential computation (assuming the max number of processors is 1)
+    for sequential computation (assuming the max number of processors is 1).
 
-    :parallel_data: *simulated* parallel dataset
-    :sequential_data: sequential dataset
-    :problem: problem number
-    :top_proc_data: dict mapping years to the new existing max # of processors
-    :pc_proc_data: dict mapping years to new # of proc available in personal computers
-    :n: problem size
-    :seq: True if drawing the sequential line
+    :param parallel_data: *simulated* parallel dataset
+    :param sequential_data: sequential dataset
+    :param problem: problem number
+    :param top_proc_data: dict mapping years to the new existing max # of processors
+    :param pc_proc_data: dict mapping years to new # of proc available in personal computers
+    :param n: problem size
+    :param seq: True if drawing the sequential line
     """
-    pc_adjusted_curve, top_adjusted_curve = new_data_for_speedup_for_available_processors(parallel_data,sequential_data,problem,top_proc_data,pc_proc_data,n=n)
+    pc_adjusted_curve, top_adjusted_curve = new_data_for_speedup_for_available_processors(
+        parallel_data, sequential_data, problem, top_proc_data, pc_proc_data, n=n
+    )
     plt.style.use('default')
-    fig, ax = plt.subplots(1,1,figsize=(6.55,3.25),dpi=200,layout='tight')
+    fig, ax = plt.subplots(1, 1, figsize=(6.55, 3.25), dpi=200, layout='tight')
     ax.grid(axis='y', alpha=0.3)
 
     plot_colors = ["#1f77b4", "#ff7f0e", "#2ca02c"]
@@ -55,30 +57,37 @@ def speedup_for_available_processors(parallel_data,sequential_data,problem,
         first_year = min(first_year, years[0])
         final_labels.append((label, values[-1], color))
 
-    def offset_arrow(arrow_y,base_curve,curve,size="normal"):
-        pre_year_index_seq = bisect.bisect(sorted(base_curve.keys()), arrow_y)-1
+    def offset_arrow(arrow_y, base_curve, curve, size="normal"):
+        pre_year_index_seq = bisect.bisect(sorted(base_curve.keys()), arrow_y) - 1
         prev_index_seq = base_curve[sorted(base_curve.keys())[pre_year_index_seq]][0]
-        pre_year_index_top = bisect.bisect(sorted(curve.keys()), arrow_y)-1
+        pre_year_index_top = bisect.bisect(sorted(curve.keys()), arrow_y) - 1
         prev_index_top = curve[sorted(curve.keys())[pre_year_index_top]][0]
-        ax.annotate(text='', xy=(arrow_y,prev_index_seq), xytext=(arrow_y,prev_index_top),
-                    arrowprops=dict(arrowstyle='<->', shrinkA=0, shrinkB=0, lw=0.8),
-                    zorder=6)
-        offset = round(prev_index_top/prev_index_seq,0)
-        text_pos=10**(math.log(prev_index_seq,10)+(math.log(prev_index_top,10)-math.log(prev_index_seq,10))/2)
+
+        reduced_top = prev_index_top - 10 if prev_index_top > prev_index_seq else prev_index_top + 0.5
+        reduced_seq = prev_index_seq + 0.5 if prev_index_top > prev_index_seq else prev_index_seq - 0.5
+
+        ax.annotate(text='', xy=(arrow_y, reduced_seq), xytext=(arrow_y, reduced_top),
+            arrowprops=dict(arrowstyle='<->', shrinkA=0, shrinkB=0, lw=0.8),
+            zorder=6)
+
+        offset = round(prev_index_top / prev_index_seq, 0)
+        text_pos = 10**(math.log(prev_index_seq, 10) + (math.log(prev_index_top, 10) - math.log(prev_index_seq, 10)) / 2)
         ftsize = 4 if size == "small" else 6
         wght = 'roman' if size == "small" else size
-        ax.annotate(text=long_human_format(int(offset))+'$\\times$', xy=(arrow_y+3,text_pos-2.5),
-            ha='center',bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.9),zorder=7,size=ftsize,weight=wght)
+
+        ax.annotate(text=f"{long_human_format(int(offset))}$\\times$", xy=(arrow_y + 3, text_pos - 2.5),
+                    ha='center', bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.9),
+                    zorder=7, size=ftsize, weight=wght)
         pass
 
     top_years = sorted(top_adjusted_curve.keys())
     if len(top_years) > 1:
-        arrow_year_top = top_years[len(top_years) // 2] + 0.5
+        arrow_year_top = top_years[len(top_years) // 2] + 0.7
         offset_arrow(arrow_y=arrow_year_top, base_curve=seq_curve, curve=top_adjusted_curve, size="normal")
 
     pc_years = sorted(pc_adjusted_curve.keys())
     if len(pc_years) > 1:
-        arrow_year_pc = pc_years[-2] + 0.5
+        arrow_year_pc = pc_years[-2] + 0.7
         offset_arrow(arrow_y=arrow_year_pc, base_curve=seq_curve, curve=pc_adjusted_curve, size="normal")
 
     for label, yval, color in final_labels:
@@ -87,19 +96,21 @@ def speedup_for_available_processors(parallel_data,sequential_data,problem,
     ax.set_yscale('log')
 
     problem_name = problem_dict[problem]
-    nice_n = "10^"+str(int(math.log(n,10)+1))
+    nice_n = "10^" + str(int(math.log(n, 10) + 1))
     ax.set_title(f"Parallel Performance for {problem_name} Problem\n"
-               f"Using Processors Available at the Time\n"
-               f"Problem Size n={n:,}")
+                 f"Using Processors Available at the Time\n"
+                 f"Problem Size n={n:,}")
     ax.set_ylabel("Parallel Speedup vs 1960 Sequential", fontsize=9)
     ax.set_xlabel("Year")
-    ax.set_xlim(first_year-1,CUR_YEAR+1)
+    ax.set_xlim(first_year - 1, CUR_YEAR + 1)
     ax.yaxis.set_major_formatter(mticker.LogFormatterMathtext())
     ax.yaxis.set_minor_locator(mticker.FixedLocator([1.0]))
+
     def custom_minor_formatter(val, pos):
         return "1" if val == 1.0 else ""
+
     ax.yaxis.set_minor_formatter(mticker.FuncFormatter(custom_minor_formatter))
-    plt.savefig(SAVE_LOC+'rel_speedup_n_'+nice_n+'.png')
+    plt.savefig(SAVE_LOC + 'rel_speedup_n_' + nice_n + '.png')
     # plt.show()
 
 def new_data_for_speedup_for_available_processors(parallel_data,sequential_data,
