@@ -2,9 +2,10 @@ from header import *
 from src.thesis_plots.span_work_problem import pareto_frontier_helper
 
 def span_vs_work_multiple_probs_pareto_frontier(par_data,seq_data,problems,allowed_models=set(model_dict.keys())):
-    
+
     plt.style.use('default')
-    fig, ax = plt.subplots(1,1,figsize=(6.55,3),dpi=200,layout='tight')
+    fig, ax = plt.subplots(1,1,figsize=(8.2,4),dpi=200,layout='tight')
+    #fig, ax = plt.subplots(1, 1, figsize=(8.5, 3), dpi=200, layout='tight')
 
     pareto_points_dict = {}
 
@@ -16,31 +17,23 @@ def span_vs_work_multiple_probs_pareto_frontier(par_data,seq_data,problems,allow
         pareto_points, best_seq = get_pareto_points(par_data,seq_data,prob,allowed_models=allowed_models)
 
         if prob == "Topological Sorting":
-            pareto_points = [#'56Chaudhuri (1992)',
-                             #ID used to be 18 in the name but not anymore?? im changing the hardcoding and hoping for it to not mess up down the line
-                             '56718Chaudhuri (1992)', 
-                            #   '56719Li, Pan, Shen (2003)',
-                                '56720Schudy (2008)'
-                                #'13Schudy (2008)'
-                                #'56Schudy (2008)'
-                                ]
+            pareto_points = ['56Chaudhuri (1992)',
+                             '56Li, Pan, Shen (2003)',
+                             '56Schudy (2008)'
+                             ]
         elif prob == "LCS":
-            pareto_points = [#'4256Aggarwal & Park (1988)', 
-                            '4Aggarwal & Park (1988)', 
-                            #  '4257Alves, Cáceres, Song (2003)', 
-                             #'4260Babu, Saxena (1997)', 
-                             #'4261Babu, Saxena (1997)', 
-                              '4Babu, Saxena (1) (1997)',
-                             '4Babu, Saxena (2) (1997)'
-                            #  '4267Hsu, Du (1984)', 
-                            #  '4270Krusche, Tiskin (2010)', 
-                            #  '4272Lin, Lu, Fang (1991)'
+            pareto_points = [#'4Aggarwal & Park (1988)',
+                             #'4Alves, Cáceres, Song (2003)',
+                             '4Apostolico, Atallah, Larmore, McFaddin (1990)',
+                             '4Babu, Saxena (1997)', '4Hsu, Du (1984)',
+                             #'4Krusche, Tiskin (2010)',
+                             #'4Lin, Lu, Fang (1991)'
                              ]
         elif prob == "Bipartite Graph MCM":
-            pareto_points = [#'28594Shiloach, Vishkin (1982)',
-                             '28Shiloach, Vishkin (1982)', 
-                             #'28595Kim, Chwa (1987)'
-                             '28Kim, Chwa (1987)']
+            pareto_points = ['28Shiloach, Vishkin (1982)',
+                             '28Kim, Chwa (1987)'
+                             ]
+
 
 
         pareto_s_w_pairs = {(par_data[x]["span"],par_data[x]["work"]) for x in pareto_points}
@@ -83,14 +76,25 @@ def span_vs_work_multiple_probs_pareto_frontier(par_data,seq_data,problems,allow
     # ax.legend(handles=handles)
     #text_pos = [(3.6,0.8),(3.7,4.8),(4.2,3)]
     #manually tweaking where the labels go
-    text_pos = [(2.4, 0.5), (4.2, 4.8), (2.8, 2)]
+    text_pos = [(6.1, 0.3), (6.6, 5.8), (3.2, 6.8)]
     for i in range(len(problems)):
         ax.text(text_pos[i][0],text_pos[i][1],problem_dict[problems[i]],color=COLORS[i],
                 fontsize=10,verticalalignment='center')
 
     ax.set_xlim([-0.5, len(all_sp)-0.5])
     ax.set_ylim([-0.5, len(all_wk)-0.5])
-    ax.set_xticks(list(range(len(all_sp))),["\n"*(i%2) + "$"+TIME_CODES[x][3:-2]+"$" for i,x in enumerate(all_sp)])
+    tick_labels = []
+    for i, x in enumerate(all_sp):
+        time_code = TIME_CODES[x][3:-2]
+        formatted_code = f"${time_code}$"
+        #if i % 2 == 1:
+        #    label = "\n" + formatted_code
+        #else:
+        label = formatted_code
+
+        tick_labels.append(label)
+
+    ax.set_xticks(ticks=list(range(len(all_sp))), labels=tick_labels, rotation=23, ha='right')
     ax.set_yticks(list(range(len(all_wk))),["$"+TIME_CODES[x][3:-2]+"$" for x in all_wk])
     ax.set_ylabel("Total # Computations (Work), O(.)")
     ax.set_xlabel("Computation Length (Span), O(.)")
@@ -162,7 +166,7 @@ def span_vs_work_multiple_probs(par_data,seq_data,problems,allowed_models=set(mo
             adj_endpts.append((xpt,ypt))
         ax.plot([adj_endpts[0][0],adj_endpts[1][0]],[adj_endpts[0][1],adj_endpts[1][1]],
                 c=color,linestyle='dashed')
-        
+
     handles = []
     for i in range(len(problems)):
         new_patch = mpatches.Patch(color=str(COLORS[i]), label=problems[i])

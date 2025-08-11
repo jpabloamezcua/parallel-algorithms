@@ -262,9 +262,8 @@ def get_processor_breakpoints(algorithms, n,
         breakpoints[min_processors] = {"algorithm": start_algo, "runtime": start_runtime, "work": start_work}
         breakpoints[max_processors] = {"algorithm": end_algo, "runtime": end_runtime, "work": end_work}
     else:
-        # breakpoints[min_processors] = {"algorithm": start_algo, "runtime": start_runtime}
         breakpoints[min_processors] = {"algorithm": start_algo, "runtime": start_runtime, "work": start_work}
-
+        breakpoints[max_processors] = {"algorithm": end_algo, "runtime": end_runtime, "work": end_work}
     # Remove redundant entries where the algorithm hasn't changed
     # cleaned_breakpoints = {}
     # prev_algo = None
@@ -597,23 +596,19 @@ def problem_speedup_vs_proc(all_data, problem, n_values=[10**3],max_p=10**9):
 
 def fastest_algo_work_eff(data, n=10**6, min_p=1, max_p=10**6, step=1000):
     problems = get_problems(data)
-    processor_range = list(range(min_p, max_p + 1, step))  # Step to make it tractable
+    processor_range = list(range(min_p, max_p + 1, step))
 
-    # Maps problem → {proc_count → category}
     problem_proc_to_category = {}
 
     for problem in problems:
-        # Get problem-specific algorithm data
         data_prob = {
             name: info
             for name, info in data.items()
             if info.get("problem") == problem
         }
 
-        # Get breakpoints for fastest algorithms
         processor_data = get_processor_breakpoints(data_prob, n, min_processors=min_p, max_processors=max_p)
 
-        # Map of proc_count → category
         proc_to_cat = {}
         for proc_count, entry in processor_data.items():
             algo_name = entry["algorithm"]
@@ -625,7 +620,6 @@ def fastest_algo_work_eff(data, n=10**6, min_p=1, max_p=10**6, step=1000):
                 cat = "not_we"
             proc_to_cat[proc_count] = cat
 
-        # Convert breakpoints to a full list using forward fill
         proc_list = sorted(proc_to_cat)
         filled_cat = []
         last_cat = None
@@ -634,11 +628,10 @@ def fastest_algo_work_eff(data, n=10**6, min_p=1, max_p=10**6, step=1000):
             while idx < len(proc_list) and proc_list[idx] <= p:
                 last_cat = proc_to_cat[proc_list[idx]]
                 idx += 1
-            filled_cat.append(last_cat if last_cat is not None else "serial")  # Default to serial if no info
+            filled_cat.append(last_cat if last_cat is not None else "serial")
 
         problem_proc_to_category[problem] = filled_cat
 
-    # Aggregate across all problems at each processor count
     serial_pct = []
     we_pct = []
     not_we_pct = []
@@ -676,7 +669,9 @@ def fastest_algo_work_eff(data, n=10**6, min_p=1, max_p=10**6, step=1000):
     plt.legend(loc="upper right")
     plt.grid(True)
     plt.tight_layout()
-    plt.show()
+   # plt.show()
+
+
 
 def count_fastest_algo_by_category(data, par_data, n=10**6, min_p=1, max_p=10**6, step=100):
     """
@@ -684,8 +679,16 @@ def count_fastest_algo_by_category(data, par_data, n=10**6, min_p=1, max_p=10**6
     is sequential, work-efficient parallel, or work-inefficient parallel, as a function of the number of processors.
     This version is optimized to be efficient by reducing redundant computations.
     """
-    all_problems = get_problems(data)
+    combined_data = data.copy()
+    combined_data.update(par_data)
+
+    all_problems = get_problems(combined_data)
+
+    #print("all_problems")
+    #print(all_problems)
     par_problems = get_problems(par_data)
+    #print("par_problems")
+    #print(par_problems)
     no_par_problems = all_problems - par_problems
 
     processor_range = list(range(min_p, max_p + 1, step))
@@ -698,13 +701,53 @@ def count_fastest_algo_by_category(data, par_data, n=10**6, min_p=1, max_p=10**6
         "no_par": {p: len(no_par_problems) for p in processor_range}
     }
 
+    PROBLEM_ID_TO_NAME = {
+        '1.1': 'Depth-First Search', '1.2': 'Breadth-First Search', '2.1': 'Strongly Connected Components',
+        '3.1': 'Bipartite Checking', '4': 'Edit Distance (Wagner-Fischer)', '4.1': 'Topological Sorting',
+        '5.1': 'Minimum Spanning Tree (Kruskal)', '5.2': 'Minimum Spanning Tree (Prim)',
+        '6.1': 'Shortest Path (Dijkstra)', '6.2': 'Shortest Path (Bellman-Ford)',
+        '7.1': 'All-Pairs Shortest Paths', '8.1': 'Maximum Flow (Edmonds-Karp)', '9.1': 'Maximum Bipartite Matching',
+        '10': 'Convex Hull', '11': 'Matrix Multiplication', '12': 'Convex Hull', '13': 'Connected Components',
+        '14': 'Minimum Spanning Tree', '15': 'Closest Pair Problem', '16': 'Shortest Path Problem',
+        '17': 'APSP', '20': 'Matrix LU Decomposition', '22': 'Single String Search', '23': 'Edit Distance',
+        '27': 'Multiplication', '28': 'Maximum Cardinality Matching', '31': 'Exact Laplacian Solver',
+        '33': 'General Permutations', '37': 'All Permutations', '38': 'Optimal Binary Search Tree',
+        '40': 'General Maximum-Weight Matching', '41': 'Constructing Eulerian Trails in a Graph', '42': 'Discrete Fourier Transform',
+        '43': 'Line Drawing', '54': 'Constuct Voronoi Diagram', '55': 'Variance Calculations',
+        '56': 'Topological Sorting', '57': 'DFA Minimization', '62': '2-Dimensional Poisson Problem',
+        '63': '3-Dimensional Poisson Problem', '64': '2-Dimensional Delaunay Triangulation', '66': 'Subset Sum',
+        '73': 'CFG Parsing', '78': 'Stable Marriage Problem', '80': 'Maximum Subarray', '81': 'Constructing Suffix Trees',
+        '107': 'Point-in-Polygon', '117': 'Maximum Cut', '119': 'Determinant of Matrices with Integer Entries',
+        '129': 'Transitive Reduction Problem of Directed Graphs', '142': '2-D Polynomial Interpolation', '143': 'Greatest Common Divisor',
+        '439': 'Edit Distance (Wagner-Fischer)', '10.1': '2-dimensional Convex Hull', '10.2': '3-dimensional Convex Hull',
+        '11.1': '2-dimensional space Closest Pair Problem', '12.1': 'Intersection detection',
+        '13.1': 'CC', '14.1': 'MST', '15.1': 'LCS', '16.1': 'Knuth-Morris-Pratt Algorithm',
+        '17.1': 'Comparison Sorting', '18.1': 'Matrix Multiplication', '19.1': 'Fast Fourier Transform',
+        '20.1': 'General Linear System', '21.1': 'Parallel Prefix Sum', '22.1': 'Parallel Reduction',
+        '23.1': 'Parallel Sorting', '24.1': '0-1 Knapsack Problem', '25.1': 'Longest Increasing Subsequence',
+        '33.1': 'String Matching'
+    }
+
     for problem in par_problems:
-        data_prob = {name: info for name, info in data.items() if info.get("problem") == problem}
+        data_prob = {}
+        for name, info in combined_data.items():
+            prob_identifier = info.get("problem")
+            if not prob_identifier:
+                continue
+
+            if (PROBLEM_ID_TO_NAME.get(str(prob_identifier)) == problem or
+                    prob_identifier == problem):
+                data_prob[name] = info
+
+        print(f"Processing problem: {problem}")
+        print(f"Found {len(data_prob)} algorithms for this problem")
+
         if not data_prob:
             continue
 
         breakpoints = get_processor_breakpoints(data_prob, n, min_processors=min_p, max_processors=max_p)
         if not breakpoints:
+            print(f"No breakpoints found for problem {problem}")
             continue
 
         sorted_bps = sorted(breakpoints.keys())
@@ -718,7 +761,8 @@ def count_fastest_algo_by_category(data, par_data, n=10**6, min_p=1, max_p=10**6
 
             active_bp_p = sorted_bps[bp_idx]
             algo_name = breakpoints[active_bp_p]["algorithm"]
-            info = data[algo_name]
+
+            info = combined_data[algo_name]
             current_work = breakpoints[active_bp_p]["work"]
 
             if not info["parallel"]:
@@ -746,7 +790,7 @@ def count_fastest_algo_by_category(data, par_data, n=10**6, min_p=1, max_p=10**6
 
     plt.xlabel("Number of Processors")
     plt.ylabel("Percentage of Algorithm Problems")
-    plt.title(f"Work Efficiency of the Fastest Algorithm\n$n={get_nice_n(n)}$")
+    plt.title(f"Work Efficiency of the Fastest Algorithm\n$n={get_nice_n(n)}$") # Make sure get_nice_n is defined
     plt.legend(loc="upper right", ncol=2)
     plt.grid(True)
     plt.xscale("log")
@@ -767,7 +811,7 @@ def problem_speedup_vs_proc_three(all_data, problem, n_values=[10**3], max_p=10*
     fig, axes = plt.subplots(len(n_values), 1, figsize=(10, 5 * len(n_values)), sharex=True)
 
     if len(n_values) == 1:
-        axes = [axes]  # Ensure axes is always iterable
+        axes = [axes]
 
     #############
     # fig = plt.figure(figsize=(10, 5 * len(n_values) + 1))  # Extra space for top bar
@@ -897,7 +941,7 @@ def problem_speedup_vs_proc_three(all_data, problem, n_values=[10**3], max_p=10*
 
         speedups = []
         labels = []
-        shade_colors = ["#f0f0f0", "#e0e0ff"]  # alternating shades
+        shade_colors = ["#f0f0f0", "#e0e0ff"]
         shade_idx = 0
 
         for j in range(len(processor_counts)):
@@ -965,7 +1009,7 @@ def problem_speedup_vs_proc_three(all_data, problem, n_values=[10**3], max_p=10*
 def problem_speedup_vs_proc_three_curves(all_data, problem, n_values=[10**3], max_p=10**9, point_number=1000):
     '''makes the speedup (and work overhead) vs processors graph
     "fastest parallel algorithm and work overhead for [problem]"
-    one graph for each problem size n value, where x axis is the number of processors
+    one graph for each problem size n value, where x axis is the number of processors 
     and y axis is the speedup of the fastest parallel algorithm at that processor number relative to best serial algorithm
 
     input:
@@ -973,98 +1017,116 @@ def problem_speedup_vs_proc_three_curves(all_data, problem, n_values=[10**3], ma
         problem: string (has to match the exact problem string that the dictionary will have)
         n_values: list of problem size n values
         max_p: integer, maximum processor number to plot
+        TODO: min_p: integer, minimum end of processor number, right now assumption is min_p=1, this could be changed if there is a need for some reason
         point_number: integer, how many points to logarithmically sample in each algorithm segment
     output:
         saves graph to SAVE_LOC + f'speedup_separated_{problem}_curves.png'
-        (SAVE_LOC determined in header.py)
+        (SAVE_LOC determinded in header.py)
     '''
+    print(f"\nFiltering data for problem: {problem}")
+    print(f"Total algorithms in all_data: {len(all_data)}")
+    print("First 5 algorithms in all_data:")
+    for name, info in list(all_data.items())[:5]:
+        print(f"{name}: {info}")
+
     all_data_prob = {
             name: info for name, info in all_data.items() if info.get("problem") == problem
     }
 
-    fig, axes = plt.subplots(len(n_values), 1, figsize=(10, 5.5 * len(n_values)), constrained_layout=True)
+    print(f"\nFiltered algorithms for problem {problem}:")
+    print(f"Number of matching algorithms: {len(all_data_prob)}")
+    print("First 5 matching algorithms:")
+    for name, info in list(all_data_prob.items())[:5]:
+        print(f"{name}: {info}")
+    print(f"\nProblem string used for filtering: {problem}")
+
+    fig, axes = plt.subplots(len(n_values), 1, figsize=(10, 5 * len(n_values)), constrained_layout=True)
 
     if len(n_values) == 1:
-        axes = [axes]
+        axes = [axes]  #so axes always iterable
 
+
+    #TODO: standardize these colors with other graphs, probably in header.py ?
+    #actually, what if all lines are black?
+    #n_colors = n_COLORS
+    #background colors for algorithm segments
     algorithm_backgrounds = {}
     background_color_index = 0
-    background_colors = plt.cm.Pastel2.colors
-    color = "black"
+    background_colors = ALGO_COLORS
 
-
+    #here actually make the graphs (one for each n)
     for i, (ax, n) in enumerate(zip(axes, n_values)):
-        max_y_limit = 1.0
+        #get_processor_breakpoints returns a dictionary where
+            #keys are processor numbers where a switch to another algo happens
+            #["algorithm"] - algo name
+            #["runtime"] - calculated runtime from the n and p for that algo
+            #["work"] - calculated work from the n for that algo
         processor_data = get_processor_breakpoints(all_data_prob, n, min_processors=1, max_processors=max_p)
-        processor_counts = sorted(list(processor_data.keys())) # Sort the breakpoints
+        processor_counts = list(processor_data.keys()) #just make a list of the keys
 
-        last_breakpoint_p = processor_counts[-1]
-        serial_runtime = processor_data[processor_counts[0]]["runtime"]
-        top_y_base = serial_runtime / processor_data[last_breakpoint_p]["runtime"]
-
-
+        #color = n_colors[i]
+        color=ALGO_LINE_COLOR
+        serial_runtime = processor_data[1]["runtime"]
+        top_y = (serial_runtime / processor_data[max_p]["runtime"]) * 2
         for j in range(len(processor_counts) - 1):
             p1 = processor_counts[j]
             p2 = processor_counts[j + 1]
             data = processor_data[p1]
             algo = data["algorithm"]
+            #assign background shade if its a new algorithm
+            if algo not in algorithm_backgrounds.keys():
+                algorithm_backgrounds[algo]=background_colors[background_color_index]
+                background_color_index+=1
 
-            # Assign background shade if it's a new algorithm
-            if algo not in algorithm_backgrounds:
-                algorithm_backgrounds[algo] = background_colors[background_color_index]
-                background_color_index = (background_color_index + 1) % len(background_colors)
+            #hoping I can cut down on time by precalculating/saving values
 
             work = data["work"]
-            work_enc = all_data[algo]["work"]
+            work_enc=all_data[algo]["work"]
             span = all_data[algo]["span"]
             parallel = int(all_data[algo]["parallel"])
-
-            overhead = work / serial_runtime
+            overhead = work / processor_data[1]["work"]
             span_fn = get_comp_fn(span)
             span_val = span_fn(n)
-            overhead_upper = overhead
+            overhead_upper = (work*2-span_val)/processor_data[1]["work"]
+            p_star=work/span_val #processor value where parallelism stops
+            def runtime_fn(p):
+                    return (work - span_val) / p + span_val + parallel
 
+            #this should stop the line at maximum parallelism
+            # if p1!=1 and p_star<p2: #parallelism fades out before end of segment
+            #     p2=p_star
+            #sample points logarithmically
             ps = np.logspace(np.log10(p1), np.log10(p2), point_number)
-            speedups_curve = [serial_runtime / get_runtime(work_enc, span, n, p, parallel) for p in ps]
+            #TODO: probably should just cal get_runtime so if we change the runtime func stuff doesnt get messed up
+            # speedups_curve = [serial_runtime / runtime_fn(p) for p in ps]
+            #just calls runtime
+            speedups_curve = [serial_runtime / get_runtime(work_enc,span,n,p,parallel) for p in ps]
 
+
+            #plot the line (curve)
             ax.plot(ps, speedups_curve, color=color)
 
-            ax.axvline(x=p1, color='gray', linestyle='--', linewidth=1.2)
-
+            #vertical lines and shading
+            ax.axvline(x=p1, color='gray', linestyle='--', linewidth=0.8)
             ax.axvspan(p1, p2, facecolor=algorithm_backgrounds[algo], alpha=0.3)
 
-            stagger_level = (j % 2)
-            y_pos_multiplier = 1.8 if stagger_level == 0 else 3.0
-            label_y_pos = top_y_base * y_pos_multiplier
-            max_y_limit = max(max_y_limit, label_y_pos)
-
-            beautified_algo = algo.replace('_', ' ').replace('-', ' ').title()
-
-            if round(overhead) <= 1 and round(overhead_upper) <= 1:
-                overhead_str = "≈1x"
-            else:
-                overhead_str = f"{overhead:.1f}×" if abs(overhead - overhead_upper) < 0.1 else f"{overhead:.1f}×–{overhead_upper:.1f}×"
-
-
+            #label with algorithm name and work overhead
             mid_x = 10 ** ((math.log10(p1) + math.log10(p2)) / 2)
-            label_text = f"{beautified_algo}\nWork Overhead: {overhead_str}"
-            ax.text(mid_x, label_y_pos, label_text, fontsize=12, ha='center', va='top', clip_on=False)
-
+            ax.text(mid_x, top_y, f"{algo}\nWork Overhead: {overhead:.0f}×-{overhead_upper:.0f}x",fontsize=8, ha='center', va='top', clip_on=False)
 
         ax.set_xscale('log')
         ax.set_yscale('log')
-        ax.set_ylabel("Speedup", fontsize=16)
-        ax.set_title(f"$n = {get_nice_n(n)}$", fontsize=19)
-
-        ax.axhline(y=1, color='gray', linestyle=':', linewidth=2)
-        ax.grid(True, which='major', axis='y', ls='--', linewidth=2)
-        ax.set_xlim(1, max_p)
-        ax.set_ylim(0.9, max_y_limit * 1.2)
-        ax.tick_params(axis='both', which='major', labelsize=13.5)
+        ax.set_ylabel("Speedup", fontsize=14)
+        ax.set_title(f"$n = {get_nice_n(n)}$", fontsize=14)
+        ax.axhline(y=1, color='gray', linestyle=':', linewidth=1)
+        ax.grid(True, which='major', axis='y', ls='--', linewidth=0.5)
+        ax.set_xlim(1,max_p)
+        ax.set_ylim(0.9,top_y*1.5)
 
 
-    axes[-1].set_xlabel("Number of Processors", fontsize=16)
-    problem_name = "Topological Sorting"
-    fig.suptitle(f"Fastest Parallel Algorithm and Work Overhead for {problem_name}", fontsize=20)
+    axes[-1].set_xlabel("Number of Processors", fontsize=14)
 
+    fig.suptitle(f"Fastest Parallel Algorithm and Work Overhead for {problem} (in dense graphs)", fontsize=16)
+    problem="Topological Sorting"
+    # plt.tight_layout(rect=[0, 0, 1, 0.96])  #leave space at the top for the suptitle
     plt.savefig(SAVE_LOC + f'speedup_separated_{problem}_curves.png')
