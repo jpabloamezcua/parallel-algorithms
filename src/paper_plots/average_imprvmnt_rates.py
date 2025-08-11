@@ -164,39 +164,16 @@ def improvements(data, n=10**3,p=8,lower=False):
     """
     Finds the best algorithms for every year for each aspect out of span, work,
     and runtime. If there are ties, an arbitrary algorithm is returned.
-
-    :data: dataset to be used (*simulated* parallel)
-    :n: problem size for runtime calculation
-    :p: number of processors for runtime calculation
-    :returns: best_stats - dict by problem of dict by year of {"bs alg": name, 
-                            "bw alg": name, "br alg": name}
-                            (bs = span, bw = work, br = running time)
+    Handles a mixed dataset of sequential and parallel algorithms.
     """
-    # Initialize best_stats with empty dictionaries
-    best_stats = {}
-    for prob in set(alg["problem"] for alg in data.values()):
-        best_stats[prob] = {}
-        for year in range(CUR_YEAR + 1):
-            best_stats[prob][year] = {
-                "bs alg": None,
-                "bw alg": None,
-                "br alg": None
-            }
-    """
-    Finds the best algorithms for every year for each aspect out of span, work,
-    and runtime. If there are ties, an arbitrary algorithm is returned.
-
-    :data: dataset to be used (*simulated* parallel)
-    :n: problem size for runtime calculation
-    :p: number of processors for runtime calculation
-    :returns: best_stats - dict by problem of dict by year of {"bs alg": name, 
-                            "bw alg": name, "br alg": name}
-                            (bs = span, bw = work, br = running time)
-              first_stats - dict mapping problem to name of its first algorithm
-    """
-    # sort the algos based on increasing year, then based on decreasing span
     names = list(data.keys())
-    names.sort(key= lambda name: (data[name]["year"], -1*data[name]["span"]))
+
+    # --- FIX 1: Make the sort robust to missing 'span' key ---
+    # We sort only by year, as it's guaranteed to exist for all entries.
+    names.sort(key= lambda name: data[name]["year"])
+
+    if not names:
+        return {}, {}
 
     first_year = data[names[0]]["year"]
 
@@ -206,7 +183,7 @@ def improvements(data, n=10**3,p=8,lower=False):
         best_stats[prob] = {}
         for year in range(first_year,CUR_YEAR+1):
             best_stats[prob][year] = {"bs alg": None, "bw alg": None, "br alg": None}
-    first_stats = {} # for every problem, keeps track of its first algo
+    first_stats = {}
 
     y = first_year
     alg_i = 0
@@ -216,112 +193,69 @@ def improvements(data, n=10**3,p=8,lower=False):
             year = data[name]["year"]
         else:
             year = CUR_YEAR+1
+
         while y < year:
-            # update all remaining problems
             for prob in probs:
-                if best_stats[prob][y]["bs alg"] is None and y>first_year:
+                if best_stats[prob][y]["bs alg"] is None and y > first_year:
                     best_stats[prob][y]["bs alg"] = best_stats[prob][y-1]["bs alg"]
-                if best_stats[prob][y]["bw alg"] is None and y>first_year:
+                if best_stats[prob][y]["bw alg"] is None and y > first_year:
                     best_stats[prob][y]["bw alg"] = best_stats[prob][y-1]["bw alg"]
-                if best_stats[prob][y]["br alg"] is None and y>first_year:
+                if best_stats[prob][y]["br alg"] is None and y > first_year:
                     best_stats[prob][y]["br alg"] = best_stats[prob][y-1]["br alg"]
             y += 1
-        assert y == year
-        if y == CUR_YEAR+1:
+
+        if y > CUR_YEAR:
             break
 
         prob = data[name]["problem"]
-        # initialize if it's the first algorithm
-        if year == first_year or best_stats[prob][year-1]["bs alg"] is None:
+
+        if year == first_year or best_stats.get(prob, {}).get(year-1, {}).get("bs alg") is None:
             best_stats[prob][year]["bs alg"] = name
             best_stats[prob][year]["bw alg"] = name
             best_stats[prob][year]["br alg"] = name
-            first_stats[prob] = name
+            if prob not in first_stats:
+                first_stats[prob] = name
 
-        # update the best span algorithm if necessary
-        #this is using best asymptotic span :(
-        # if best_stats[prob][year]["bs alg"] is None:
-        #     best_span = data[best_stats[prob][year-1]["bs alg"]]["span"]
-        # else:
-        #     best_span = data[best_stats[prob][year]["bs alg"]]["span"]
-        # if data[name]["span"] < best_span:
-        #     best_stats[prob][year]["bs alg"] = name
-        #this takes best span according to n
-        if best_stats[prob][year]["bs alg"] is None:
-            best_span = get_seq_runtime(data[best_stats[prob][year-1]["bs alg"]]["span"],n)
-        else:
-            best_span = get_seq_runtime(data[best_stats[prob][year]["bs alg"]]["span"],n)
-        if get_seq_runtime(data[name]["span"],n) < best_span:
-            best_stats[prob][year]["bs alg"] = name
+        # --- FIX 2: Use .get() to provide fallbacks for missing keys ---
+        # For sequential algos, 'work' and 'span' fall back to 'time'.
 
+        # Update best span
+        current_best_span_alg = best_stats[prob][year].get("bs alg") or best_stats[prob][year-1].get("bs alg")
+        if current_best_span_alg:
+            best_span_val = data[current_best_span_alg].get("span", data[current_best_span_alg].get("time"))
+            best_span = get_seq_runtime(best_span_val, n)
 
-        # update the best work algorithm if necessary
-        # takes best work asymptotically and uh, not what we want!!! (i think)
-        # if best_stats[prob][year]["bw alg"] is None:
-        #     best_work = data[best_stats[prob][year-1]["bw alg"]]["work"]
-        # else:
-        #     best_work = data[best_stats[prob][year]["bw alg"]]["work"]
-        # if data[name]["work"] < best_work:
-        #     best_stats[prob][year]["bw alg"] = name
-        #now does it with the numbers we plug in
-        if best_stats[prob][year]["bw alg"] is None:
-            best_work = get_seq_runtime(data[best_stats[prob][year-1]["bw alg"]]["work"],n)
-        else:
-            best_work = get_seq_runtime(data[best_stats[prob][year]["bw alg"]]["work"],n)
-        if get_seq_runtime(data[name]["work"],n) < best_work:
-            best_stats[prob][year]["bw alg"] = name
+            current_alg_span_val = data[name].get("span", data[name].get("time"))
+            if get_seq_runtime(current_alg_span_val, n) < best_span:
+                best_stats[prob][year]["bs alg"] = name
 
-        # update the best running time algorithm if necessary
-        try:
-            if best_stats[prob][year]["br alg"] is None:
-                old_name = best_stats[prob][year-1]["br alg"]
-                if old_name is None:
-                    print(f"Warning: No previous algorithm found for {prob} in year {year}")
-                    continue
-                if old_name not in data:
-                    print(f"Warning: Algorithm {old_name} not found in data")
-                    continue
-                wk = data[old_name]["work"]
-                sp = data[old_name]["span"]
-                best_runtime = get_runtime(wk, sp, n, p, lower=lower)
-            else:
-                old_name = best_stats[prob][year]["br alg"]
-                if old_name not in data:
-                    print(f"Warning: Algorithm {old_name} not found in data")
-                    continue
-                if "parallel" not in data[old_name]:
-                    print(f"Missing parallel field for algorithm: {old_name}")
-                    print(f"Available fields: {list(data[old_name].keys())}")
-                wk = data[old_name]["work"]
-                sp = data[old_name]["span"]
-                best_runtime = get_runtime(wk, sp, n, p, lower=lower)
-        except KeyError as e:
-            print(f"KeyError in improvements: {e}")
-            print(f"Algorithm causing error: {old_name}")
-            print(f"Available fields: {list(data[old_name].keys()) if old_name in data else 'Not found'}")
-            continue
-        except Exception as e:
-            print(f"Unexpected error in improvements: {e}")
-            continue
+        # Update best work
+        current_best_work_alg = best_stats[prob][year].get("bw alg") or best_stats[prob][year-1].get("bw alg")
+        if current_best_work_alg:
+            best_work_val = data[current_best_work_alg].get("work", data[current_best_work_alg].get("time"))
+            best_work = get_seq_runtime(best_work_val, n)
 
-        try:
-            wk = data[name]["work"]
-            sp = data[name]["span"]
-            if "parallel" not in data[name]:
-                print(f"Missing parallel field for algorithm: {name}")
-                print(f"Available fields: {list(data[name].keys())}")
-            cur_runtime = get_runtime(wk,sp,n,p,lower=lower)
+            current_alg_work_val = data[name].get("work", data[name].get("time"))
+            if get_seq_runtime(current_alg_work_val, n) < best_work:
+                best_stats[prob][year]["bw alg"] = name
+
+        # Update best running time
+        current_best_rt_alg = best_stats[prob][year].get("br alg") or best_stats[prob][year-1].get("br alg")
+        if current_best_rt_alg:
+            old_wk = data[current_best_rt_alg].get("work", data[current_best_rt_alg].get("time"))
+            old_sp = data[current_best_rt_alg].get("span", data[current_best_rt_alg].get("time"))
+            best_runtime = get_runtime(old_wk, old_sp, n, p, lower=lower)
+
+            new_wk = data[name].get("work", data[name].get("time"))
+            new_sp = data[name].get("span", data[name].get("time"))
+            cur_runtime = get_runtime(new_wk, new_sp, n, p, lower=lower)
+
             if cur_runtime < best_runtime:
                 best_stats[prob][year]["br alg"] = name
-        except KeyError as e:
-            print(f"KeyError in improvements: {e}")
-            print(f"Algorithm causing error: {name}")
-            print(f"Available fields: {list(data[name].keys())}")
 
         alg_i += 1
 
     return best_stats, first_stats
-
 
 def first_seq_names(data):
     '''returns: first_algos: dictionary by problem of algorithm names for the 1st algo of that problem'''
@@ -1338,58 +1272,52 @@ def EVERYTHING_seq_plus_all_impr_rate_histo_helper(ax, full_data, par_data, seq_
 def sankey_style_graph(all_data, par_data, n=1000000, p=1000):
     all_problems = get_problems(all_data)
     par_problems = get_problems(par_data)
-    has_parallel = len(par_problems) / len(all_problems)
+
+    if len(all_problems) > 0:
+        has_parallel = len(par_problems) / len(all_problems)
+    else:
+        has_parallel = 0
+
     best_stats, first_stats = improvements(all_data, n, p)
 
     parallel_faster_count = 0
     prob_speedups = []
-    #print(par_problems)
-    #print(best_stats)
-    #print(best_stats.keys())
-    for prob in par_problems:
-        best_algo = best_stats[prob][2024]["br alg"]
-        if all_data[best_algo]["parallel"] == 1:
-            parallel_faster_count += 1
-            best_algo_rt = get_runtime(all_data[best_algo]["work"], all_data[best_algo]["span"], n, p)
-            best_work = best_stats[prob][2024]["bw alg"]
-            best_work_rt = get_runtime(all_data[best_work]["work"], all_data[best_work]["span"], n, 1)
-            speedup = best_work_rt / best_algo_rt
-            prob_speedups.append(speedup)
-            # if (speedup>1000):
-            #     print("speedup: ", speedup)
-            #     print("best algo: ",best_algo, " work, span: ",all_data[best_algo]["work"], all_data[best_algo]["span"], " runtime: ", best_algo_rt)
-            #     print("best algo work: ",all_data[best_algo]["work"], get_seq_runtime(all_data[best_algo]["work"],n))
-            #     print("best seq algo: ", best_work, " work, span: ",all_data[best_work]["work"], all_data[best_work]["span"], " runtime: ", best_work_rt)
 
-        else:
-            parallel=False
+    for prob_name in par_problems:
+        if prob_name in best_stats:
+            best_algo_name = best_stats[prob_name][2024]["br alg"]
+            best_algo_data = all_data.get(best_algo_name, {})
 
-    parallel_faster = parallel_faster_count / len(par_problems)
+            if int(best_algo_data.get("parallel", 0)) == 1:
+                parallel_faster_count += 1
 
-    # speedup_bins = ["1-10x", "10-100x", "100-1000x"]
-    # speedup_values = [0, 0, 0]
-    # # speedup_bins = ["1-10x", "10-100x", "100-1000x", "1000-10000x"]
-    # # speedup_values = [0, 0, 0, 0]
+                work = best_algo_data.get("work", best_algo_data.get("time"))
+                span = best_algo_data.get("span", best_algo_data.get("time"))
 
-    # for s in prob_speedups:
-    #     if 1 <= s < 10:
-    #         speedup_values[0] += 1
-    #     elif 10 <= s < 100:
-    #         speedup_values[1] += 1
-    #     elif 100 <= s < 1000:
-    #         speedup_values[2] += 1
-    #     else:
-    #         raise ValueError("There is now a speedup more than 1000, update code buckets")
-    #     # elif 1000 <= s < 10000:
-    #     #     speedup_values[3] += 1
-    #     # else:
-    #     #     raise ValueError("There is now a speedup more than 10000, update code buckets")
+                if work and span:
+                    best_algo_rt = get_runtime(work, span, n, p)
 
+                    best_work_name = best_stats[prob_name][2024]["bw alg"]
+                    best_work_data = all_data.get(best_work_name, {})
+                    work_bw = best_work_data.get("work", best_work_data.get("time"))
+                    span_bw = best_work_data.get("span", best_work_data.get("time"))
 
+                    if work_bw and span_bw:
+                        best_work_rt = get_runtime(work_bw, span_bw, n, 1)
 
-    speedup_bins = ["1-2x", "2x-4x", "4x-8x", "8x-16x", "16x-32x", "32x-64x", "64x-128x", "128x-256x",
-                    "256x-512x", "512x-1024x", "oh no"]
-    speedup_values = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                        if isinstance(best_algo_rt, (int, float)) and isinstance(best_work_rt, (int, float)) and best_algo_rt > 0:
+                            speedup = best_work_rt / best_algo_rt
+                            prob_speedups.append(speedup)
+
+    if not par_problems:
+        parallel_faster = 0
+    else:
+        parallel_faster = parallel_faster_count / len(par_problems)
+
+    speedup_bins = ["1-2x", "2x-4x", "4x-8x", "8x-16x", "16x-32x", "32x-64x",
+                    "64x-128x", "128x-256x", "256x-512x", "512x-1024x", "1024x+"]
+    speedup_values = [0] * len(speedup_bins)
+
     for s in prob_speedups:
         if 1 < s < 2:
             speedup_values[0] += 1
@@ -1401,6 +1329,8 @@ def sankey_style_graph(all_data, par_data, n=1000000, p=1000):
             speedup_values[3] += 1
         elif 16 <= s < 32:
             speedup_values[4] += 1
+        elif 32 <= s < 64:
+            speedup_values[5] += 1
         elif 64 <= s < 128:
             speedup_values[6] += 1
         elif 128 <= s < 256:
@@ -1409,138 +1339,75 @@ def sankey_style_graph(all_data, par_data, n=1000000, p=1000):
             speedup_values[8] += 1
         elif 512 <= s < 1024:
             speedup_values[9] += 1
-        elif 1024 <= s < 2048: #oh no
-            speedup_values[10] += 1
         else:
-            raise ValueError("There is now a speedup more than 1024!")
+            speedup_values[10] += 1
 
 
     speedup_total = sum(speedup_values)
-    speedup_values = [v / speedup_total for v in speedup_values]
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    if speedup_total > 0:
+        speedup_values = [v / speedup_total for v in speedup_values]
+
+    fig, ax = plt.subplots(figsize=(8, 8))
     bar_width = 0.7
 
     cb_colors = sns.color_palette("colorblind")
-    # Pick distinct, high-contrast colors
-    bar1_color_top = cb_colors[0]   # blue
-    bar1_color_bottom = cb_colors[1]  # orange
+    bar1_color_top = cb_colors[0]
+    bar1_color_bottom = cb_colors[1]
+    bar2_color_top = cb_colors[2]
+    bar2_color_bottom = cb_colors[3]
 
-    bar2_color_top = cb_colors[2]   # green
-    bar2_color_bottom = cb_colors[3]  # red
-
-    # Bar 1 - Parallel Existence
     bar1 = [has_parallel, 1 - has_parallel]
-
     ax.bar(1, bar1[1], width=bar_width, color=bar1_color_bottom)
     ax.bar(1, bar1[0], width=bar_width, bottom=bar1[1], color=bar1_color_top)
+    ax.text(1, bar1[1] / 2, f"No Parallel\nAlgorithm Exists\n{bar1[1]* 100:.0f}%", ha='center', va='center', color='white', fontsize=11)
+    ax.text(1, bar1[1] + bar1[0] / 2, f"Parallel\nAlgorithm Exists\n{bar1[0]* 100:.0f}%", ha='center', va='center', color='white', fontsize=11)
+    ax.text(1, 1.02, f"{100:.0f}%", ha='center', va='bottom', color='black', fontsize=11)
 
-    # Add labels to Bar 1
-    ax.text(1, bar1[1] / 2, f"No Parallel\nAlgorithm Exists\n{bar1[1]* 100:.0f}%", ha='center', va='center', color='white')
-    ax.text(1, bar1[1] + bar1[0] / 2, f"Parallel\nAlgorithm Exists\n{bar1[0]* 100:.0f}%", ha='center', va='center', color='white')
-
-    # Add proportion on top of Bar 1 (100%)
-    ax.text(1, 1.02, f"{100:.0f}%", ha='center', va='bottom', color='black')
-
-    # Bar 2 - Parallel Faster
     bar2 = [parallel_faster, 1 - parallel_faster]
     ax.bar(2, bar2[1], width=bar_width, color=bar2_color_bottom)
     ax.bar(2, bar2[0], width=bar_width, bottom=bar2[1], color=bar2_color_top)
-
-    # Add labels to Bar 2
-    ax.text(2, bar2[1] / 2, f"Parallel Algorithm\nNot Faster\n{bar2[1]* 100:.0f}%", ha='center', va='center', color='white')
-    ax.text(2, bar2[1] + bar2[0] / 2, f"Parallel Algorithm\nFaster\n{bar2[0]* 100:.0f}%", ha='center', va='center', color='white')
-
-    # Add proportion on top of Bar 2
-    ax.text(2, 1.02, f"{has_parallel * 100:.0f}%", ha='center', va='bottom', color='black')
-
-    # # Bar 3 - Speedup Distribution
-    # bottom = 0
-    # for i in range(len(speedup_bins)):
-    #     ax.bar(3, speedup_values[i], width=bar_width, bottom=bottom, alpha=0.8)
-    #     if speedup_values[i]>0:
-    #         #ax.text(3, bottom + speedup_values[i] / 2, f"{speedup_bins[i]}", ha='center', va='center', color='black')
-    #         ax.text(3, bottom + speedup_values[i] / 2, f"{speedup_bins[i]}\n{speedup_values[i]* 100:.2f}%", ha='center', va='center', color='black')
-    #     # ax.text(3, bottom + speedup_values[i] / 2, f"{speedup_bins[i]}", ha='center', va='center', color='black')
-    #     bottom += speedup_values[i]
+    ax.text(2, bar2[1] / 2, f"Parallel Algorithm\nNot Faster\n{bar2[1]* 100:.0f}%", ha='center', va='center', color='white', fontsize=11)
+    ax.text(2, bar2[1] + bar2[0] / 2, f"Parallel Algorithm\nFaster\n{bar2[0]* 100:.0f}%", ha='center', va='center', color='white', fontsize=11)
+    ax.text(2, 1.02, f"{has_parallel * 100:.0f}%", ha='center', va='bottom', color='black', fontsize=11)
 
     bottom = 0
-    label_base_x = 3 + bar_width / 2 + 0.03  # starting x position
-    stagger_x_offset = 0.07  # offset for second-level stagger
-    nonzero_idx = 0  # counts only non-empty bins
+    label_base_x = 3 + bar_width / 2 + 0.03
+    stagger_x_offset = 0.07
+    nonzero_idx = 0
 
-    #picking a colormap
     greens = [cm.Greens(x) for x in np.linspace(0.3, 0.95, len(speedup_bins))]
     for i in range(len(speedup_bins)):
         value = speedup_values[i]
         ax.bar(3, value, width=bar_width, bottom=bottom, alpha=0.8, color=greens[i])
-
         if value > 0:
             mid_y = bottom + value / 2
-
-            # Percentage inside the bar
-            ax.text(3, mid_y, f"{speedup_bins[i]}", ha='center', va='center', fontsize=8, color='black')
-
-            # Horizontal line to label
+            ax.text(3, mid_y, f"{speedup_bins[i]}", ha='center', va='center', fontsize=9, color='black')
             ax.plot([3 + bar_width / 2, label_base_x], [mid_y, mid_y], color='black', lw=0.5)
-
-            # Stagger labels only among non-empty categories
             level = nonzero_idx % 2
             label_x = label_base_x + (stagger_x_offset if level else 0)
-            ax.text(label_x, mid_y, f"{value * 100:.2f}%", ha='left', va='center', fontsize=8)
+            ax.text(label_x, mid_y, f"{value * 100:.2f}%", ha='left', va='center', fontsize=9)
             nonzero_idx += 1
-
         bottom += value
-        # # Draw curly bracket on the right of bar 3 using LaTeX
-        # curly_bracket = FancyArrowPatch(
-        #     (3, bottom),  # Start point of the bracket
-        #     (3, 0),       # End point of the bracket
-        #     connectionstyle="arc3,rad=0.3",  # This adds a curved style to simulate the curly bracket
-        #     mutation_scale=30,  # Controls the size of the bracket
-        #     color="black",
-        #     linewidth=2,
-        # )
 
-        # # Add the curly bracket to the plot
-        # ax.add_patch(curly_bracket)
-
-
-
-    # Add proportion on top of Bar 3 (Has Parallel x Faster)
-    ax.text(3, 1.02, f"{has_parallel * parallel_faster*100:.0f}%", ha='center', va='bottom', color='black')
-
-    # Draw dotted lines
+    ax.text(3, 1.02, f"{has_parallel * parallel_faster*100:.0f}%", ha='center', va='bottom', color='black', fontsize=11)
     ax.plot([1 + bar_width / 2, 2 - bar_width / 2], [1, 1], linestyle='--', color='black')
     ax.plot([1 + bar_width / 2, 2 - bar_width / 2], [bar1[1], 0], linestyle='--', color='black')
-
     ax.plot([2 + bar_width / 2, 3 - bar_width / 2], [1, 1], linestyle='--', color='black')
     ax.plot([2 + bar_width / 2, 3 - bar_width / 2], [bar2[1], 0], linestyle='--', color='black')
-
-
-    # Remove spines (borders)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
-
-    # Keep y-axis visible
-    # ax.spines['left'].set_visible(True)
-    # or remove it?
     ax.spines['left'].set_visible(True)
-
-    # Labels and title
     ax.set_xticks([1, 2, 3])
     ax.tick_params(axis='x', length=0)
-    ax.set_xticklabels(["Algorithm Problems", "Algorithm Problems\nwith Parallel Algorithms", "Speedup"])
-    # ax.set_ylabel("Proportion")
-    # ax.tick_params(axis='y', length=0)
+    ax.set_xticklabels(["Algorithm Problems", "Algorithm Problems\nwith Parallel Algorithms", "Speedup"], fontsize=12)
     ax.tick_params(axis='y', length=5)
     ax.set_ylabel('')
-    ax.set_ylabel("Percentage of Algorithm Problems", fontsize=12)
-    # ax.set_yticklabels([])
-    ax.set_title(f"Proportion of Algorithm Problems, n={n}, p={p}")
+    ax.set_ylabel("Percentage of Algorithm Problems", fontsize=14)
+    ax.set_title(f"Proportion of Algorithm Problems, n={n}, p={p}", y=1.05, fontsize=16)
 
     plt.savefig(SAVE_LOC+'sankey_style_graph_n_'+str(n)+'_p_'+str(p)+'.png')
-    # plt.show()
 
 def EVERYTHING_yearly_impr_rate_histo_helper_just_par(ax,full_data, raw_buckets, n, p, measure="rt"):
     assert measure == "sp" or measure == "rt"
