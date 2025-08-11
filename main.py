@@ -123,7 +123,6 @@ def make_model_dataset(par_algos):
 
 make_model_dataset(simulated_par_data)
 
-# Patch all data dictionaries to ensure they have the parallel field
 patch_data_with_parallel_field(full_data)
 patch_data_with_parallel_field(simulated_par_data)
 patch_data_with_parallel_field(rel_speedup_seq_data)
@@ -262,51 +261,53 @@ histo_buckets = [
             ]
 
 ######### FIGURE 1 #########
-print("figure 1.1: Algorithm Improvements over Time") #Done
+#lalalaprint("figure 1.1: Algorithm Improvements over Time") #Done
 #TODO: test if what i have is correct (check which problems have lots of variations, do they scale down intuitively) #Looks good
-average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES)
-average_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES,var_weights="thesis_weight")
+#lalalaaverage_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES)
+#lalalaaverage_improvement_over_decade_graph(simulated_par_data,full_seq_data,DECADES,var_weights="thesis_weight")
 
 #print("figure ??: Number of Parallel Processors Over Time") #This works (maybe double check)
 #TODO: change colors? #done
-available_processors(top_processor_data,pc_processor_data)
+#lalalaavailable_processors(top_processor_data,pc_processor_data)
 
-print("figure ??: Parallel Performance for All Pairs Shortest Paths Problem using processors available at the time") #done
+#lalalaprint("figure ??: Parallel Performance for All Pairs Shortest Paths Problem using processors available at the time") #done
 #TODO: fix the manual gap labels #done
 #TODO: maybe do different colors for this one and the one above #done
 #TODO: this is probably sparse apsp, so why does the problem say apsp? data error? #I think it's okay
 #TODO: if later the autoformat changes then make sure the y range is bottom:1, top: whatever the top is #done?
 #TODO: are these proc values correct (hardcoded?) #Done?
-speedup_for_available_processors(simulated_par_data,full_seq_data,'APSP', top_processor_data,pc_processor_data,n=10**6,seq=True)
+#lalalaspeedup_for_available_processors(simulated_par_data,full_seq_data,'APSP', top_processor_data,pc_processor_data,n=10**6,seq=True)
 
 
 ######### FIGURE 2 #########
 print("sankey style figure")
 #TODO: try other colors
-#TODO: fix the label & title overlap
-#TODO: if the rightmost bar tick marks dont overlap because of thin categories, remove the buffer so every second one is not moved out
+#TODO: fix the label & title overlap solved#done
+#TODO: if the rightmost bar tick marks dont overlap because of thin categories, remove the buffer so every second one is not moved out #done
 #TODO: change titles
-#personal
-#sankey_style_graph(full_data,simulated_par_data, n=10**6, p=8)
-# #big
-#sankey_style_graph(full_data,simulated_par_data, n=10**9, p=10**3)
-#TODO: Make another graph
+combined_data = {}
+combined_data.update(full_seq_data)
+combined_data.update(simulated_par_data)
+
+patch_data_with_parallel_field(combined_data)
+sankey_style_graph(combined_data, simulated_par_data, n=10**6, p=8)
+sankey_style_graph(combined_data, simulated_par_data, n=10**9, p=10**3)
 
 ######### FIGURE 3 #########
-print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Computational Length")
+#lalalaprint("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Computational Length")
 #TODO: make sure that the hardcoded values in this graph are still ok
-span_vs_work_multiple_probs_pareto_frontier(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
-print("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Speedup Relative to Sequantial Time")
-numerical_overhead_vs_span(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'],n=10**6) #done
+#lalalaspan_vs_work_multiple_probs_pareto_frontier(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'])
+#lalalaprint("figure 1.3: Work - Span Tradeoff for Parallel Algorithms // Speedup Relative to Sequantial Time")
+#lalalanumerical_overhead_vs_span(simulated_par_data,full_seq_data, problems=['Topological Sorting','LCS','Bipartite Graph MCM'],n=10**6) #done
 
-print("figure 1.3: Best Span vs Best Work-efficient Algorithm Span for all Problems") #done
+#lalalaprint("figure 1.3: Best Span vs Best Work-efficient Algorithm Span for all Problems") #done
 #TODO: make labels look nicer #done
 #TODO: fix that one dotted line (change going to 0 to going to 100%) #done
-NEW_w_seq_span_comparison_best_vs_work_efficient(full_problem_data)
+#lalalaNEW_w_seq_span_comparison_best_vs_work_efficient(full_problem_data)
 
 
 ######### FIGURE 4 #########
-print("figure 1.2: Algorithm Problem Average Yearly Improvement Rate (Sequantial and Parallel)")
+#lalalaprint("figure 1.2: Algorithm Problem Average Yearly Improvement Rate (Sequantial and Parallel)")
 #this one (should be) just  improvement: measures from best seq
 #TODO: add labels to axis #done
 
@@ -325,11 +326,11 @@ histo_buckets_temp = [
     {"max": 0.4, "label": "30-40%"},
     {"max": math.inf, "label": ">40%"}
 ]
-EVERYTHING_yearly_impr_rate_histo_grid(full_data, histo_buckets_temp,n_values=[10**3,10**6,10**9],
-                               p_values=[8,10**3,10**6],measure="rt",variation="just_par_impr")
+#lalala EVERYTHING_yearly_impr_rate_histo_grid(full_data, histo_buckets_temp,n_values=[10**3,10**6,10**9],
+#lalala                               p_values=[8,10**3,10**6],measure="rt",variation="just_par_impr")
 
 
-print("STARTS_______________________")
+#lalalaprint("STARTS_______________________")
 ######### FIGURE 5 #########
 #print("figure 1.4: Fastest Parallel Algorithm and Work Overhead for Topological Sorting (in dense graphs)")la
 #TODO: beutify algo names #done?
@@ -340,17 +341,17 @@ print("STARTS_______________________")
 #TODO: bigger fonts for everything #done
 #TODO: when things dont fit, move label outside of graph and add arrow #done?
 #TODO: methodology addition about how we estimate work overhead and when we use each
-problem_speedup_vs_proc_three_curves(full_data, 13.1, n_values=[10**3, 10**6, 10**9], max_p=10**10)
+#lalalaproblem_speedup_vs_proc_three_curves(full_data, 13.1, n_values=[10**3, 10**6, 10**9], max_p=10**10)
 ######### FIGURE 6 #########
-print("figure 1.5: Work Overhead for the fastest algorithm") #done
+#lalalaprint("figure 1.5: Work Overhead for the fastest algorithm") #done
 #TODO: change % to x #Done
-NEW_work_overhead_histogram_graph_multiple_p(simulated_par_data,full_seq_data,pset,p_values=[8,10**3,10**6],n_values=[10**3,10**6,10**9],
-                            upper_bounds=[0,100,1000,10000,math.inf],
-                            max_p=10**9,allowed_models=set(model_dict.keys()))
+#lalalaNEW_work_overhead_histogram_graph_multiple_p(simulated_par_data,full_seq_data,pset,p_values=[8,10**3,10**6],n_values=[10**3,10**6,10**9],
+#lalala                            upper_bounds=[0,100,1000,10000,math.inf],
+#lalala                            max_p=10**9,allowed_models=set(model_dict.keys()))
 #fastest_algo_work_eff(simulated_par_data, n=10**6, min_p=1, max_p=10**6)
 # Ensure full_data is properly loaded before plotting #done
 #fastest_algo_work_eff(full_data, n=10**6, min_p=1, max_p=10**6, step=1)
-count_fastest_algo_by_category(full_data, simulated_par_data, n=10**6, min_p=1, max_p=10**6, step=1)
+#lalalacount_fastest_algo_by_category(full_data, simulated_par_data, n=10**6, min_p=1, max_p=10**6, step=1)
 
 
 
